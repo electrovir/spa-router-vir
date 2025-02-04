@@ -14,8 +14,8 @@ npm i spa-router-vir
 
 # Examples
 
-- The [GitHub repo for this package](https://github.com/electrovir/spa-router-vir) contains [an example](https://github.com/electrovir/spa-router-vir/tree/main/src/test) which can be tested using `npm start`.
-- The [`threejs-experiments` repo](https://github.com/electrovir/threejs-experiments) utilizes this package.
+-   The [GitHub repo for this package](https://github.com/electrovir/spa-router-vir) contains [an example](https://github.com/electrovir/spa-router-vir/tree/main/src/test) which can be tested using `npm start`.
+-   The [`threejs-experiments` repo](https://github.com/electrovir/threejs-experiments) utilizes this package.
 
 # Usage
 
