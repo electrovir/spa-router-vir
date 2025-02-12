@@ -108,7 +108,7 @@ export const myRouter = new SpaRouter<
     undefined,
     undefined
 >({
-    /** Sue the same route sanitizer as the earlier example for simplicity. */
+    /** Use the same route sanitizer as the earlier example for simplicity. */
     sanitizeRoute(rawRoute) {
         return {
             paths: sanitizePaths(rawRoute),
