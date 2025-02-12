@@ -108,17 +108,15 @@ export class SpaRouter<
     public createRouteUrl(
         newRoute: Readonly<Partial<FullRoute<ValidPaths, ValidSearch, ValidHash>>>,
     ): string {
-        const currentRawRoute = parseUrlIntoRawRoute(globalThis.location.href, undefined);
-
         const fullNewRoute: Required<FullRoute> = {
-            ...currentRawRoute,
+            ...parseUrlIntoRawRoute(globalThis.location.href, this.params.basePath),
             ...newRoute,
         };
         const sanitizedNewRoute = this.sanitizeRoute(fullNewRoute);
 
         const shouldInsertBasePath =
             /** Check if the current website is actually using the base path currently. */
-            this.routeIncludesBasePath(currentRawRoute) &&
+            this.routeIncludesBasePath(parseUrlIntoRawRoute(globalThis.location.href, undefined)) &&
             /** Check if the given new route is missing the base path. */
             !this.routeIncludesBasePath(sanitizedNewRoute);
 

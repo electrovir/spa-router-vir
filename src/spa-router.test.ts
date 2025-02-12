@@ -1,7 +1,7 @@
 import {assert, waitUntil} from '@augment-vir/assert';
 import {MaybePromise} from '@augment-vir/common';
 import {describe, it} from '@augment-vir/test';
-import {parseUrl} from 'url-vir';
+import {buildUrl, parseUrl, SearchParamStrategy} from 'url-vir';
 import {FullRoute, ValidHashBase, ValidPathsBase, ValidSearchBase} from './full-route.js';
 import {SpaRouterParams} from './spa-router-params.js';
 import {SpaRouter} from './spa-router.js';
@@ -39,6 +39,32 @@ describe(SpaRouter.name, () => {
             }
         };
     }
+
+    it('inserts a base path', () => {
+        let sanitizerCalled = false;
+        window.history.replaceState(undefined, '', '/something');
+        const router = new SpaRouter({
+            sanitizeRoute(rawRoute) {
+                sanitizerCalled = true;
+                assert.notStrictEquals(rawRoute.paths[0], 'something');
+                return rawRoute;
+            },
+            basePath: 'something',
+        });
+
+        assert.isTrue(sanitizerCalled);
+
+        assert.strictEquals(
+            buildUrl(
+                router.createRouteUrl({
+                    paths: ['path1'],
+                }),
+                {search: {}},
+                {searchParamStrategy: SearchParamStrategy.Clear},
+            ).pathname,
+            '/something/path1',
+        );
+    });
 
     it(
         'sanitizes the current route on construction',
