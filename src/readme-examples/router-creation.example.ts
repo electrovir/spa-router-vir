@@ -1,4 +1,4 @@
-import {FullRoute, SpaRouter} from '../index.js';
+import {FullSpaRoute, SpaRouter} from '../index.js';
 
 export const myRouter = new SpaRouter<
     /** The allowed router paths. */
@@ -38,7 +38,7 @@ export type ValidRouterPaths =
     | ['about', 'team' | 'website'];
 
 /** A helper function that specifically sanitizes the `paths` part of the route. */
-export function sanitizePaths(rawRoute: Readonly<Pick<FullRoute, 'paths'>>): ValidRouterPaths {
+export function sanitizePaths(rawRoute: Readonly<Pick<FullSpaRoute, 'paths'>>): ValidRouterPaths {
     const topLevelPath = rawRoute.paths[0];
 
     if (topLevelPath === 'about') {

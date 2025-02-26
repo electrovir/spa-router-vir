@@ -2,7 +2,13 @@ import {assert, waitUntil} from '@augment-vir/assert';
 import {MaybePromise} from '@augment-vir/common';
 import {describe, it} from '@augment-vir/test';
 import {buildUrl, parseUrl, SearchParamStrategy} from 'url-vir';
-import {FullRoute, ValidHashBase, ValidPathsBase, ValidSearchBase} from './full-route.js';
+import {
+    FullSpaRoute,
+    ValidHashBase,
+    ValidPathsBase,
+    ValidSearchBase,
+    type SpaRoute,
+} from './spa-route.js';
 import {SpaRouterParams} from './spa-router-params.js';
 import {SpaRouter} from './spa-router.js';
 import {MockValidPaths, sanitizeMockPaths} from './spa-router.mock.js';
@@ -24,7 +30,7 @@ describe(SpaRouter.name, () => {
             const mockRouter = new SpaRouter<ValidPaths, ValidSearch, ValidHash>({
                 sanitizeRoute(rawRoute) {
                     return {
-                        paths: sanitizeMockPaths(rawRoute) as string[] as ValidPaths,
+                        paths: sanitizeMockPaths(rawRoute) as ReadonlyArray<string> as ValidPaths,
                         search: undefined as ValidSearch,
                         hash: undefined as ValidHash,
                     };
@@ -212,7 +218,7 @@ describe(SpaRouter.name, () => {
                     'about',
                     'team',
                 ],
-            } as const satisfies Partial<FullRoute<MockValidPaths>>;
+            } as const satisfies Partial<SpaRoute<MockValidPaths>>;
             const newUrl = mockRouter.createRouteUrl(newRoute);
 
             assert.isFalse(mockRouter.setRoute(newRoute));
@@ -265,7 +271,7 @@ describe(SpaRouter.name, () => {
     it(
         'does not set an identical route',
         testRouter({}, (mockRouter) => {
-            const events: FullRoute[] = [];
+            const events: FullSpaRoute[] = [];
 
             mockRouter.listen(false, (route) => {
                 events.push(route);
@@ -296,7 +302,7 @@ describe(SpaRouter.name, () => {
     it(
         'reads back button events',
         testRouter({}, async (mockRouter) => {
-            const events: FullRoute[] = [];
+            const events: FullSpaRoute[] = [];
 
             mockRouter.listen(false, (route) => {
                 events.push(route);
@@ -319,7 +325,7 @@ describe(SpaRouter.name, () => {
     it(
         'reads back button events',
         testRouter({}, async (mockRouter) => {
-            const events: FullRoute[] = [];
+            const events: FullSpaRoute[] = [];
 
             mockRouter.listen(false, (route) => {
                 events.push(route);

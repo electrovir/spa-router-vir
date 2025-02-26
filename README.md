@@ -28,7 +28,7 @@ Here is an example usage of `SpaRouter` with full run-time route type safety:
 <!-- example-link: src/readme-examples/router-creation.example.ts -->
 
 ```TypeScript
-import {FullRoute, SpaRouter} from 'spa-router-vir';
+import {FullSpaRoute, SpaRouter} from 'spa-router-vir';
 
 export const myRouter = new SpaRouter<
     /** The allowed router paths. */
@@ -68,7 +68,7 @@ export type ValidRouterPaths =
     | ['about', 'team' | 'website'];
 
 /** A helper function that specifically sanitizes the `paths` part of the route. */
-export function sanitizePaths(rawRoute: Readonly<Pick<FullRoute, 'paths'>>): ValidRouterPaths {
+export function sanitizePaths(rawRoute: Readonly<Pick<FullSpaRoute, 'paths'>>): ValidRouterPaths {
     const topLevelPath = rawRoute.paths[0];
 
     if (topLevelPath === 'about') {
@@ -177,7 +177,7 @@ Listeners can be removed with the `removeListener()` method, or by calling the r
 <!-- example-link: src/readme-examples/remove-route-listener.example.ts -->
 
 ```TypeScript
-import {FullRoute} from 'spa-router-vir';
+import {FullSpaRoute} from 'spa-router-vir';
 import {myRouter, ValidRouterPaths} from './router-creation.example.js';
 
 /** Remove a listener with the removal callback. */
@@ -191,7 +191,7 @@ import {myRouter, ValidRouterPaths} from './router-creation.example.js';
 
 /** Remove a listener by keeping track of it and passing it in to `removeListener`. */
 {
-    function listenToRoute(route: FullRoute<ValidRouterPaths, undefined, undefined>) {
+    function listenToRoute(route: FullSpaRoute<ValidRouterPaths, undefined, undefined>) {
         console.info(route);
     }
 

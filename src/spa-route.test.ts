@@ -1,12 +1,12 @@
 import {assert} from '@augment-vir/assert';
 import {describe, it, itCases} from '@augment-vir/test';
 import {
-    FullRoute,
     ValidHashBase,
     ValidPathsBase,
     ValidSearchBase,
-    isFullRoute,
-} from './full-route.js';
+    isSpaRoute,
+    type SpaRoute,
+} from './spa-route.js';
 import {MockValidPaths} from './spa-router.mock.js';
 
 describe('ValidPathsBase', () => {
@@ -61,7 +61,7 @@ describe('FullRoute', () => {
             .tsType<{
                 paths: ['home'];
             }>()
-            .matches<FullRoute<MockValidPaths, undefined, undefined>>();
+            .matches<SpaRoute<MockValidPaths, undefined, undefined>>();
         assert
             .tsType<{
                 paths: ['home'];
@@ -69,18 +69,18 @@ describe('FullRoute', () => {
                     notAllowedKey: ['not allowed value'];
                 };
             }>()
-            .notMatches<FullRoute<MockValidPaths, undefined, undefined>>();
+            .notMatches<SpaRoute<MockValidPaths, undefined, undefined>>();
         assert
             .tsType<{
                 paths: ['home'];
                 hash: 'derp';
             }>()
-            .notMatches<FullRoute<MockValidPaths, undefined, undefined>>();
+            .notMatches<SpaRoute<MockValidPaths, undefined, undefined>>();
     });
 });
 
-describe(isFullRoute.name, () => {
-    itCases(isFullRoute, [
+describe(isSpaRoute.name, () => {
+    itCases(isSpaRoute, [
         {
             it: 'accepts a minimal FullRoute',
             input: {

@@ -6,7 +6,13 @@ import {listenTo} from 'typed-event-target';
 import {SearchParamStrategy, buildUrl, joinUrlPaths, parseUrl} from 'url-vir';
 import {SanitizationDepthMaxed} from './errors/sanitization-depth-maxed.error.js';
 import {SpaRouterError} from './errors/spa-router.error.js';
-import {FullRoute, ValidHashBase, ValidPathsBase, ValidSearchBase} from './full-route.js';
+import {
+    FullSpaRoute,
+    ValidHashBase,
+    ValidPathsBase,
+    ValidSearchBase,
+    type SpaRoute,
+} from './spa-route.js';
 import {SpaRouterParams, spaRouterParamsShape} from './spa-router-params.js';
 import {shouldClickEventTriggerRouteChange} from './util/click-event-should-set-routes.js';
 import {
@@ -25,7 +31,7 @@ export class SpaRouter<
     ValidSearch extends ValidSearchBase | undefined = undefined,
     ValidHash extends ValidHashBase | undefined = undefined,
 > {
-    protected innerObservable: Observable<Required<FullRoute<ValidPaths, ValidSearch, ValidHash>>>;
+    protected innerObservable: Observable<FullSpaRoute<ValidPaths, ValidSearch, ValidHash>>;
     /**
      * Removes the `SpaRouter`'s listener to global URL changes. This is used when `.destroy()` is
      * called.
@@ -39,9 +45,7 @@ export class SpaRouter<
         assertValidShape(params, spaRouterParamsShape);
         this.params = {...params};
         const sanitizedCurrentUrl = this.readCurrentRoute();
-        this.innerObservable = new Observable<
-            Required<FullRoute<ValidPaths, ValidSearch, ValidHash>>
-        >({
+        this.innerObservable = new Observable<FullSpaRoute<ValidPaths, ValidSearch, ValidHash>>({
             defaultValue: sanitizedCurrentUrl,
             /** Also consider values unequal so they are always set. */
             equalityCheck: () => false,
@@ -83,7 +87,7 @@ export class SpaRouter<
     }
 
     /** Detect if the given route already includes the router's `basePath`. */
-    protected routeIncludesBasePath(route: Readonly<Partial<Pick<FullRoute, 'paths'>>>): boolean {
+    protected routeIncludesBasePath(route: Readonly<Partial<Pick<SpaRoute, 'paths'>>>): boolean {
         if (!route.paths || !this.params.basePath) {
             return false;
         }
@@ -91,7 +95,7 @@ export class SpaRouter<
     }
 
     /** Reads the current route with the sanitizer so it's type safe. */
-    public readCurrentRoute(): Required<FullRoute<ValidPaths, ValidSearch, ValidHash>> {
+    public readCurrentRoute(): FullSpaRoute<ValidPaths, ValidSearch, ValidHash> {
         return this.sanitizeRoute(
             parseUrlIntoRawRoute(globalThis.location.href, this.params.basePath),
         );
@@ -99,16 +103,16 @@ export class SpaRouter<
 
     /** Run the sanitizer this `SpaRouter` instance was initialized with on any given route. */
     public sanitizeRoute(
-        rawRoute: Readonly<Required<FullRoute>>,
-    ): Required<FullRoute<ValidPaths, ValidSearch, ValidHash>> {
+        rawRoute: Readonly<FullSpaRoute>,
+    ): FullSpaRoute<ValidPaths, ValidSearch, ValidHash> {
         return this.params.sanitizeRoute(rawRoute);
     }
 
     /** Create a full URL href string from the given route (combined with the current route). */
     public createRouteUrl(
-        newRoute: Readonly<Partial<FullRoute<ValidPaths, ValidSearch, ValidHash>>>,
+        newRoute: Readonly<Partial<SpaRoute<ValidPaths, ValidSearch, ValidHash>>>,
     ): string {
-        const fullNewRoute: Required<FullRoute> = {
+        const fullNewRoute: FullSpaRoute = {
             ...parseUrlIntoRawRoute(globalThis.location.href, this.params.basePath),
             ...newRoute,
         };
@@ -156,7 +160,7 @@ export class SpaRouter<
      * @returns Whether the route was set or not.
      */
     public setRoute(
-        newRoute: Readonly<Partial<FullRoute<ValidPaths, ValidSearch, ValidHash>>>,
+        newRoute: Readonly<Partial<SpaRoute<ValidPaths, ValidSearch, ValidHash>>>,
         options: Readonly<{
             /**
              * If set to `true`, the current route will be _replaced_ with the new route. What this
@@ -200,7 +204,7 @@ export class SpaRouter<
      * @returns Whether the route was routed to or not.
      */
     public setRouteOnDirectNavigation(
-        newRoute: Readonly<Partial<FullRoute<ValidPaths, ValidSearch, ValidHash>>>,
+        newRoute: Readonly<Partial<SpaRoute<ValidPaths, ValidSearch, ValidHash>>>,
         mouseEvent: Readonly<
             Pick<
                 MouseEvent,
@@ -224,7 +228,7 @@ export class SpaRouter<
     public listen(
         fireImmediately: boolean,
         listener: ObservableListener<
-            ExcludeNoUpdate<Required<FullRoute<ValidPaths, ValidSearch, ValidHash>>>
+            ExcludeNoUpdate<FullSpaRoute<ValidPaths, ValidSearch, ValidHash>>
         >,
     ) {
         const maxListenerCount =
@@ -248,7 +252,7 @@ export class SpaRouter<
      */
     public removeListener(
         listener: ObservableListener<
-            ExcludeNoUpdate<Required<FullRoute<ValidPaths, ValidSearch, ValidHash>>>
+            ExcludeNoUpdate<FullSpaRoute<ValidPaths, ValidSearch, ValidHash>>
         >,
     ) {
         return this.innerObservable.removeListener(listener);

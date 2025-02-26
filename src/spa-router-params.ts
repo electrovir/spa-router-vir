@@ -1,6 +1,6 @@
 import {Overwrite} from '@augment-vir/common';
 import {defineShape, or} from 'object-shape-tester';
-import {FullRoute, ValidHashBase, ValidPathsBase, ValidSearchBase} from './full-route.js';
+import {FullSpaRoute, ValidHashBase, ValidPathsBase, ValidSearchBase} from './spa-route.js';
 
 /**
  * A function that sanitizes a route, ensuring that the raw input matches the type safety of a
@@ -13,8 +13,8 @@ export type RouteSanitizer<
     ValidSearch extends ValidSearchBase | undefined = undefined,
     ValidHash extends ValidHashBase | undefined = undefined,
 > = (
-    rawRoute: Readonly<Required<FullRoute>>,
-) => Readonly<Required<FullRoute<ValidPaths, ValidSearch, ValidHash>>>;
+    rawRoute: Readonly<FullSpaRoute>,
+) => Readonly<FullSpaRoute<ValidPaths, ValidSearch, ValidHash>>;
 
 /**
  * Used to verify if an object is a valid `SpaRouterParams` instance.

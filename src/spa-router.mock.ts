@@ -1,4 +1,4 @@
-import {FullRoute} from './full-route.js';
+import {type SpaRoute} from './spa-route.js';
 
 export type MockValidPaths =
     | ['home']
@@ -6,7 +6,7 @@ export type MockValidPaths =
     | ['about']
     | ['about', 'team' | 'website'];
 
-export function sanitizeMockPaths(rawRoute: Readonly<Pick<FullRoute, 'paths'>>): MockValidPaths {
+export function sanitizeMockPaths(rawRoute: Readonly<Pick<SpaRoute, 'paths'>>): MockValidPaths {
     const topLevelPath = rawRoute.paths[0];
 
     if (topLevelPath === 'about') {

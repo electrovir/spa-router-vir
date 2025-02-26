@@ -1,7 +1,7 @@
 import {assert} from '@augment-vir/assert';
 import {describe, it} from '@augment-vir/test';
 import {assertValidShape} from 'object-shape-tester';
-import {FullRoute} from './full-route.js';
+import {FullSpaRoute} from './spa-route.js';
 import {RouteSanitizer, SpaRouterParams, spaRouterParamsShape} from './spa-router-params.js';
 import {MockValidPaths} from './spa-router.mock.js';
 
@@ -35,7 +35,7 @@ describe('SpaRouterParams', () => {
 
     it('has correct types for all params', () => {
         const exampleParams: SpaRouterParams = {
-            sanitizeRoute(rawRoute: Required<FullRoute>) {
+            sanitizeRoute(rawRoute: FullSpaRoute) {
                 return rawRoute as any;
             },
             basePath: '',
@@ -51,7 +51,7 @@ describe('SpaRouterParams', () => {
 describe('RouteSanitizer', () => {
     it('has the correct input type', () => {
         const sanitizerExample: RouteSanitizer = (input) => {
-            assert.tsType(input).equals<Readonly<Required<FullRoute>>>();
+            assert.tsType(input).equals<Readonly<FullSpaRoute>>();
             return input as any;
         };
     });

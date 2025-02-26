@@ -1,6 +1,6 @@
 import {addPrefix, removePrefix} from '@augment-vir/common';
 import {parseUrl} from 'url-vir';
-import {FullRoute} from '../full-route.js';
+import {FullSpaRoute} from '../spa-route.js';
 
 /**
  * Parse the given URL into a `FullRoute` object.
@@ -10,7 +10,7 @@ import {FullRoute} from '../full-route.js';
 export function parseUrlIntoRawRoute(
     url: string | URL,
     basePath?: string | undefined,
-): Required<FullRoute> {
+): FullSpaRoute {
     const urlParts = parseUrl(url);
 
     const pathToSplit = removePrefix({
