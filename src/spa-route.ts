@@ -113,3 +113,18 @@ export type SpaRouteByPath<
         paths: Extract<OriginalFullSpaRoute['paths'], Readonly<[...Paths, ...any[]]>>;
     }
 >;
+
+/**
+ * Narrow a path to only the valid children paths of the given path.
+ *
+ * @category Main
+ */
+export type ChildPaths<
+    Paths extends OriginalFullSpaRoute['paths'],
+    OriginalFullSpaRoute extends FullSpaRoute,
+> =
+    SpaRouteByPath<Paths, OriginalFullSpaRoute>['paths'] extends Readonly<
+        [...Paths, ...infer ChildPaths]
+    >
+        ? Readonly<ChildPaths>
+        : never;
