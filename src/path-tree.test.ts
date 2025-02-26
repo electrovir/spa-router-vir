@@ -1,6 +1,7 @@
 import {assert, check} from '@augment-vir/assert';
 import {describe, it, itCases} from '@augment-vir/test';
 import {PathTree, sanitizeTreePaths} from './index.js';
+import {SpaRouteByPath, type FullSpaRoute} from './spa-route.js';
 
 describe(PathTree.name, () => {
     const mockPathTree = new PathTree({
@@ -25,9 +26,12 @@ describe(PathTree.name, () => {
 
     it('generates a paths object', () => {
         const expectation = {
+            path: '',
             fullPaths: [],
             children: {
                 app: {
+                    path: 'app',
+                    fullPaths: ['app'],
                     children: {
                         settings: {
                             fullPaths: [
@@ -37,6 +41,11 @@ describe(PathTree.name, () => {
                             path: 'settings',
                         },
                         uploads: {
+                            path: 'uploads',
+                            fullPaths: [
+                                'app',
+                                'uploads',
+                            ],
                             children: {
                                 files: {
                                     fullPaths: [
@@ -57,14 +66,12 @@ describe(PathTree.name, () => {
                             },
                         },
                     },
-                    fullPaths: ['app'],
-                    path: 'app',
                 },
                 legal: {
+                    path: 'legal',
                     fullPaths: [
                         'legal',
                     ],
-                    path: 'legal',
                 },
             },
         } as const;
@@ -72,6 +79,20 @@ describe(PathTree.name, () => {
         assert.deepEquals(mockPathTree.paths, expectation);
 
         const testAssignment: typeof mockPathTree.paths = expectation;
+    });
+
+    it('works with SpaRouteByPath', () => {
+        const fakePath: SpaRouteByPath<
+            typeof mockPathTree.paths.children.app.fullPaths,
+            FullSpaRoute<typeof mockPathTree.PathsType>
+        > = {
+            paths: ['app'],
+            hash: undefined,
+            search: undefined,
+        };
+
+        assert.tsType(fakePath.paths[0]).equals<'app'>();
+        assert.tsType(fakePath.paths[1]).equals<'uploads' | 'settings' | undefined>();
     });
 
     it('rejects an invalid tree', () => {
@@ -100,12 +121,14 @@ describe(PathTree.name, () => {
         assert
             .tsType<typeof mockPathTree.PathsType>()
             .equals<
-                | []
-                | ['app']
-                | ['app', 'uploads', 'patients']
-                | ['app', 'uploads', 'files']
-                | ['app', 'settings']
-                | ['legal']
+                Readonly<
+                    | []
+                    | ['app']
+                    | ['app', 'uploads', 'patients']
+                    | ['app', 'uploads', 'files']
+                    | ['app', 'settings']
+                    | ['legal']
+                >
             >();
     });
     it('rejects runtime access to PathsType', () => {
@@ -115,7 +138,7 @@ describe(PathTree.name, () => {
     function testSanitizePaths(rawPaths: string[]) {
         const output = mockPathTree.sanitizePaths(rawPaths);
 
-        if (check.jsonEquals(rawPaths, output)) {
+        if (check.jsonEquals<any, any>(rawPaths, output)) {
             return undefined;
         } else {
             return output;

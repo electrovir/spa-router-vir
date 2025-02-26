@@ -26,9 +26,9 @@ export type BasePathTree = {
  * @category Internal
  */
 export type TreePaths<Tree extends Readonly<BasePathTree> | EmptyObject> = EmptyObject extends Tree
-    ? []
+    ? Readonly<[]>
     : Exclude<Tree, EmptyObject>['allowBare'] extends true
-      ? [] | NestedTreePaths<Exclude<Tree, EmptyObject>>
+      ? Readonly<[]> | NestedTreePaths<Exclude<Tree, EmptyObject>>
       : NestedTreePaths<Exclude<Tree, EmptyObject>>;
 
 /**
@@ -39,9 +39,9 @@ export type TreePaths<Tree extends Readonly<BasePathTree> | EmptyObject> = Empty
 export type NestedTreePaths<NestedTree extends BasePathTree> =
     NestedTree['children'] extends infer Children extends NonNullable<BasePathTree['children']>
         ? Values<{
-              [Path in keyof Children]: [Path, ...TreePaths<Children[Path]>];
+              [Path in keyof Children]: Readonly<[Path, ...TreePaths<Children[Path]>]>;
           }>
-        : [];
+        : Readonly<[]>;
 
 function checkTree(tree: Readonly<BasePathTree>, pathChain: string[]): void {
     if (!tree.allowBare && !Object.keys(tree.children).length) {
@@ -80,16 +80,9 @@ export type RuntimeTreePaths<
           path: CurrentPath;
           fullPaths: Readonly<CurrentPaths>;
       }>
-    : (Exclude<Tree, EmptyObject>['allowBare'] extends true
-          ? '' extends CurrentPath
-              ? Readonly<{
-                    fullPaths: Readonly<CurrentPaths>;
-                }>
-              : Readonly<{
-                    path: CurrentPath;
-                    fullPaths: Readonly<CurrentPaths>;
-                }>
-          : unknown) & {
+    : Readonly<{
+          path: CurrentPath;
+          fullPaths: Readonly<CurrentPaths>;
           children: Readonly<{
               [ChildPath in keyof Exclude<Tree, EmptyObject>['children']]: RuntimeTreePaths<
                   Exclude<Tree, EmptyObject>['children'][ChildPath],
@@ -97,7 +90,7 @@ export type RuntimeTreePaths<
                   ChildPath
               >;
           }>;
-      };
+      }>;
 
 function generatePathTreePaths<const Tree extends BasePathTree | EmptyObject>(
     tree: Readonly<Tree>,
@@ -106,12 +99,11 @@ function generatePathTreePaths<const Tree extends BasePathTree | EmptyObject>(
     const children: BasePathTree['children'] | undefined = check.hasKey(tree, 'children')
         ? (tree.children as BasePathTree['children'])
         : undefined;
-    const allowBare = check.hasKey(tree, 'allowBare') ? tree.allowBare : true;
 
     return filterObject(
         {
-            path: allowBare ? parentPaths[parentPaths.length - 1] : undefined,
-            fullPaths: allowBare ? parentPaths : undefined,
+            path: parentPaths[parentPaths.length - 1] || '',
+            fullPaths: parentPaths,
             children: children
                 ? mapObjectValues(children, (childPath, childTree) =>
                       generatePathTreePaths<BasePathTree | EmptyObject>(childTree, [
@@ -121,7 +113,7 @@ function generatePathTreePaths<const Tree extends BasePathTree | EmptyObject>(
                   )
                 : undefined,
         },
-        (key, value) => check.isTruthy(value),
+        (key, value) => check.isDefined(value),
     ) as AnyObject as RuntimeTreePaths<Tree>;
 }
 
@@ -200,7 +192,7 @@ export class PathTree<const Tree extends Readonly<BasePathTree>> {
 export function sanitizeTreePaths(
     rawPaths: ReadonlyArray<string>,
     tree: Readonly<BasePathTree | EmptyObject>,
-): string[] {
+): ReadonlyArray<string> {
     if ('allowBare' in tree) {
         if (check.isLengthAtLeast(rawPaths, 1)) {
             const matchedChild = tree.children[rawPaths[0]];

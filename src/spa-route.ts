@@ -1,3 +1,4 @@
+import type {Overwrite} from '@augment-vir/common';
 import {defineShape, indexedKeys, isValidShape, optional, or} from 'object-shape-tester';
 
 /**
@@ -73,3 +74,42 @@ const spaRouteShape = defineShape({
 export function isSpaRoute(input: unknown): input is SpaRoute {
     return isValidShape(input, spaRouteShape);
 }
+
+/**
+ * Narrow a route to a specific path.
+ *
+ * @category Main
+ * @example
+ *
+ * ```ts
+ * import {PathTree, FullSpaRoute, SpaRouteByPath} from 'spa-router-vir';
+ *
+ * const myAppPathTree = new PathTree({
+ *     allowBare: true,
+ *     children: {
+ *         myRoute: {},
+ *     },
+ * });
+ *
+ * export type MyAppFullRoute = Readonly<
+ *     FullSpaRoute<typeof myAppPathTree.PathsType, undefined, undefined>
+ * >;
+ *
+ * export type MySpecificRoute<Paths extends MyAppFullRoute['paths']> = Readonly<
+ *     SpaRouteByPath<Paths, MyAppFullRoute>
+ * >;
+ *
+ * function handleSpecificRoute(
+ *     specificRoute: MySpecificRoute<typeof myAppPathTree.paths.children.myRoute.fullPaths>,
+ * ) {}
+ * ```
+ */
+export type SpaRouteByPath<
+    Paths extends OriginalFullSpaRoute['paths'],
+    OriginalFullSpaRoute extends FullSpaRoute,
+> = Overwrite<
+    OriginalFullSpaRoute,
+    {
+        paths: Extract<OriginalFullSpaRoute['paths'], Readonly<[...Paths, ...any[]]>>;
+    }
+>;
