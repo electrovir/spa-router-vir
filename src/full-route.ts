@@ -3,19 +3,19 @@ import {defineShape, indexedKeys, isValidShape, or} from 'object-shape-tester';
 /**
  * Base for all valid paths type parameters.
  *
- * @category Types
+ * @category Internal
  */
 export type ValidPathsBase = string[];
 /**
  * Base for all valid search type parameters.
  *
- * @category Types
+ * @category Internal
  */
 export type ValidSearchBase = Record<string, string[]>;
 /**
  * Base for all valid hash type parameters.
  *
- * @category Types
+ * @category Internal
  */
 // eslint-disable-next-line sonarjs/redundant-type-aliases
 export type ValidHashBase = string;
@@ -55,7 +55,7 @@ const fullRouteShape = defineShape({
  * Detects if the input is a `FullRoute`. Note that this cannot check for type safety for _your_
  * specific route type, use the `sanitizeRoute` constructor param for `SpaRouter` for that purpose.
  *
- * @category Util
+ * @category Internal
  */
 export function isFullRoute(input: unknown): input is FullRoute {
     return isValidShape(input, fullRouteShape);

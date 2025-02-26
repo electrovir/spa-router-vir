@@ -1,6 +1,6 @@
 import {assert, check} from '@augment-vir/assert';
 import {describe, it, itCases} from '@augment-vir/test';
-import {PathTree, sanitizeTreePaths} from './path-tree.js';
+import {PathTree, sanitizeTreePaths} from './index.js';
 
 describe(PathTree.name, () => {
     const mockPathTree = new PathTree({
@@ -21,6 +21,57 @@ describe(PathTree.name, () => {
             },
             legal: {},
         },
+    });
+
+    it('generates a paths object', () => {
+        const expectation = {
+            fullPaths: [],
+            children: {
+                app: {
+                    children: {
+                        settings: {
+                            fullPaths: [
+                                'app',
+                                'settings',
+                            ],
+                            path: 'settings',
+                        },
+                        uploads: {
+                            children: {
+                                files: {
+                                    fullPaths: [
+                                        'app',
+                                        'uploads',
+                                        'files',
+                                    ],
+                                    path: 'files',
+                                },
+                                patients: {
+                                    fullPaths: [
+                                        'app',
+                                        'uploads',
+                                        'patients',
+                                    ],
+                                    path: 'patients',
+                                },
+                            },
+                        },
+                    },
+                    fullPaths: ['app'],
+                    path: 'app',
+                },
+                legal: {
+                    fullPaths: [
+                        'legal',
+                    ],
+                    path: 'legal',
+                },
+            },
+        } as const;
+
+        assert.deepEquals(mockPathTree.paths, expectation);
+
+        const testAssignment: typeof mockPathTree.paths = expectation;
     });
 
     it('rejects an invalid tree', () => {
@@ -62,7 +113,7 @@ describe(PathTree.name, () => {
     });
 
     function testSanitizePaths(rawPaths: string[]) {
-        const output = mockPathTree.sanitizePaths({paths: rawPaths});
+        const output = mockPathTree.sanitizePaths(rawPaths);
 
         if (check.jsonEquals(rawPaths, output)) {
             return undefined;

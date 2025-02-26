@@ -3,7 +3,7 @@ import {GlobalUrlEventsConsolidationError} from '../errors/consolidation.error.j
 /**
  * The event name that all global URL events are rewritten to emit.
  *
- * @category Util
+ * @category Internal
  */
 export const globalLocationChangeEventName = 'locationchange';
 
@@ -33,7 +33,7 @@ function newReplaceState(...args: any) {
 /**
  * Consolidate all types of url changes to `routeChangeEventName` events.
  *
- * @category Util
+ * @category Internal
  */
 export function consolidateGlobalUrlEvents() {
     /** This should only ever be executed once. */

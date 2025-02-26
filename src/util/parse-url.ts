@@ -5,7 +5,7 @@ import {FullRoute} from '../full-route.js';
 /**
  * Parse the given URL into a `FullRoute` object.
  *
- * @category Util
+ * @category Internal
  */
 export function parseUrlIntoRawRoute(
     url: string | URL,

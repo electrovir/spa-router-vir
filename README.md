@@ -92,6 +92,40 @@ export function sanitizePaths(rawRoute: Readonly<Pick<FullRoute, 'paths'>>): Val
 }
 ```
 
+## Nested paths
+
+Use `PathTree` to easily define complex path nesting with automatic validation and type generation.
+
+<!-- example-link: src/readme-examples/path-tree.example.ts -->
+
+```TypeScript
+import {PathTree, SpaRouter} from 'spa-router-vir';
+
+const myPathTree = new PathTree({
+    allowBare: true,
+    children: {
+        'path-a': {
+            allowBare: false,
+            children: {
+                'nested-path1': {},
+                'nested-path2': {},
+            },
+        },
+        'path-b': {},
+    },
+});
+
+export const myRouter = new SpaRouter({
+    sanitizeRoute(rawRoute) {
+        return {
+            paths: myPathTree.sanitizePaths(rawRoute.paths),
+            hash: undefined,
+            search: undefined,
+        };
+    },
+});
+```
+
 ## Supporting SPAs on GitHub Pages (or other similar services)
 
 To use SpaRouter on GitHub Pages, you must set a `basePath` property when constructing `SpaRouter`. This ensures that your GitHub Pages repo path is maintained:

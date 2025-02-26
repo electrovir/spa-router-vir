@@ -5,7 +5,7 @@ const LeftClickButton = 0;
  * Detects if the user was trying to do something special with a link, like opening it in a new tab,
  * rather than trying to directly navigate to the link.
  *
- * @category Util
+ * @category Internal
  * @returns `true` if the user was intending to directly navigate to a link. `false` if the user was
  *   trying to do something special with the link.
  */

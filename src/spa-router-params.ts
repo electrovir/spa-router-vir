@@ -6,7 +6,7 @@ import {FullRoute, ValidHashBase, ValidPathsBase, ValidSearchBase} from './full-
  * A function that sanitizes a route, ensuring that the raw input matches the type safety of a
  * specific `SpaRouter` implementation.
  *
- * @category Types
+ * @category Internal
  */
 export type RouteSanitizer<
     ValidPaths extends ValidPathsBase = ValidPathsBase,
@@ -19,7 +19,7 @@ export type RouteSanitizer<
 /**
  * Used to verify if an object is a valid `SpaRouterParams` instance.
  *
- * @category Types
+ * @category Internal
  */
 export const spaRouterParamsShape = defineShape({
     /**
@@ -61,7 +61,7 @@ export const spaRouterParamsShape = defineShape({
 /**
  * Construction params for `SpaRouter`.
  *
- * @category Types
+ * @category Internal
  */
 export type SpaRouterParams<
     ValidPaths extends ValidPathsBase = ValidPathsBase,
