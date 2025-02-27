@@ -142,7 +142,7 @@ export class SpaRouter<
                 search: newRouteWithBase.search,
                 hash: newRouteWithBase.hash
                     ? addPrefix({value: newRouteWithBase.hash, prefix: '#'})
-                    : '#',
+                    : '',
             },
             {
                 searchParamStrategy: SearchParamStrategy.Clear,
