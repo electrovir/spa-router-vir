@@ -39,15 +39,17 @@ export type TreePaths<Tree extends Readonly<BasePathTree> | EmptyObject> = Empty
 export type NestedTreePaths<NestedTree extends BasePathTree> =
     NestedTree['children'] extends infer Children extends NonNullable<BasePathTree['children']>
         ? Values<{
-              [Path in keyof Children]: Readonly<[Path, ...TreePaths<Children[Path]>]>;
+              [Path in keyof Children]: Readonly<
+                  [Path extends `:${string}` ? string : Path, ...TreePaths<Children[Path]>]
+              >;
           }>
         : Readonly<[]>;
 
 function checkTree(tree: Readonly<BasePathTree>, pathChain: string[]): void {
-    if (!tree.allowBare && !Object.keys(tree.children).length) {
+    if (!tree.allowBare && !Object.keys(tree.children).some((key) => !key.startsWith(':'))) {
         const parentString = pathChain.length ? ` on ${pathChain.join(' -> ')}.` : '.';
         throw new Error(
-            `Invalid tree: allowBare is false but there are no children${parentString}`,
+            `Invalid tree: allowBare is false but there are no definite children${parentString}`,
         );
     }
 
@@ -75,22 +77,34 @@ export type RuntimeTreePaths<
     Tree extends Readonly<BasePathTree | EmptyObject>,
     CurrentPaths extends PropertyKey[] = [],
     CurrentPath extends PropertyKey = '',
-> = EmptyObject extends Tree
-    ? Readonly<{
-          path: CurrentPath;
-          fullPaths: Readonly<CurrentPaths>;
-      }>
-    : Readonly<{
-          path: CurrentPath;
-          fullPaths: Readonly<CurrentPaths>;
-          children: Readonly<{
-              [ChildPath in keyof Exclude<Tree, EmptyObject>['children']]: RuntimeTreePaths<
-                  Exclude<Tree, EmptyObject>['children'][ChildPath],
-                  [...CurrentPaths, ChildPath],
-                  ChildPath
-              >;
-          }>;
-      }>;
+> = CurrentPath extends `:${string}`
+    ? EmptyObject extends Tree
+        ? Readonly<EmptyObject>
+        : Readonly<{
+              children: Readonly<{
+                  [ChildPath in keyof Exclude<Tree, EmptyObject>['children']]: RuntimeTreePaths<
+                      Exclude<Tree, EmptyObject>['children'][ChildPath],
+                      [...CurrentPaths, ChildPath],
+                      ChildPath
+                  >;
+              }>;
+          }>
+    : EmptyObject extends Tree
+      ? Readonly<{
+            path: CurrentPath;
+            fullPaths: Readonly<CurrentPaths>;
+        }>
+      : Readonly<{
+            path: CurrentPath;
+            fullPaths: Readonly<CurrentPaths>;
+            children: Readonly<{
+                [ChildPath in keyof Exclude<Tree, EmptyObject>['children']]: RuntimeTreePaths<
+                    Exclude<Tree, EmptyObject>['children'][ChildPath],
+                    [...CurrentPaths, ChildPath],
+                    ChildPath
+                >;
+            }>;
+        }>;
 
 function generatePathTreePaths<const Tree extends BasePathTree | EmptyObject>(
     tree: Readonly<Tree>,
@@ -99,11 +113,13 @@ function generatePathTreePaths<const Tree extends BasePathTree | EmptyObject>(
     const children: BasePathTree['children'] | undefined = check.hasKey(tree, 'children')
         ? (tree.children as BasePathTree['children'])
         : undefined;
+    const currentPath = parentPaths[parentPaths.length - 1] || '';
+    const isPathParam = currentPath.startsWith(':');
 
     return filterObject(
         {
-            path: parentPaths[parentPaths.length - 1] || '',
-            fullPaths: parentPaths,
+            path: isPathParam ? undefined : currentPath,
+            fullPaths: isPathParam ? undefined : parentPaths,
             children: children
                 ? mapObjectValues(children, (childPath, childTree) =>
                       generatePathTreePaths<BasePathTree | EmptyObject>(childTree, [
@@ -202,6 +218,17 @@ export function sanitizeTreePaths(
                     rawPaths[0],
                     ...sanitizeTreePaths(rawPaths.slice(1), matchedChild),
                 ];
+            } else {
+                const pathParamMatch = Object.entries(tree.children).find(([key]) =>
+                    key.startsWith(':'),
+                );
+
+                if (pathParamMatch) {
+                    return [
+                        rawPaths[0],
+                        ...sanitizeTreePaths(rawPaths.slice(1), pathParamMatch[1]),
+                    ];
+                }
             }
         }
 
@@ -209,7 +236,7 @@ export function sanitizeTreePaths(
             return [];
         } else {
             /** If bare paths are not allowed but we got one. */
-            const firstChild = Object.keys(tree.children)[0];
+            const firstChild = Object.keys(tree.children).find((key) => !key.startsWith(':'));
 
             if (!firstChild) {
                 throw new Error('Got blocked bare path but no children exist.');
@@ -218,6 +245,7 @@ export function sanitizeTreePaths(
             return [firstChild];
         }
     } else {
+        /** Empty object case, where at this point in the path tree there are definitely no children. */
         return [];
     }
 }

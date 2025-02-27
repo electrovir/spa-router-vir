@@ -13,7 +13,12 @@ describe(PathTree.name, () => {
                     uploads: {
                         allowBare: false,
                         children: {
-                            files: {},
+                            files: {
+                                allowBare: true,
+                                children: {
+                                    ':file-path': {},
+                                },
+                            },
                             patients: {},
                         },
                     },
@@ -54,6 +59,9 @@ describe(PathTree.name, () => {
                                         'files',
                                     ],
                                     path: 'files',
+                                    children: {
+                                        ':file-path': {},
+                                    },
                                 },
                                 patients: {
                                     fullPaths: [
@@ -126,6 +134,7 @@ describe(PathTree.name, () => {
                     | ['app']
                     | ['app', 'uploads', 'patients']
                     | ['app', 'uploads', 'files']
+                    | ['app', 'uploads', 'files', string]
                     | ['app', 'settings']
                     | ['legal']
                 >
@@ -170,6 +179,16 @@ describe(PathTree.name, () => {
                 'uploads',
                 'files',
             ],
+        },
+        {
+            it: 'allows a path param',
+            input: [
+                'app',
+                'uploads',
+                'files',
+                'something',
+            ],
+            expect: undefined,
         },
     ]);
 });
