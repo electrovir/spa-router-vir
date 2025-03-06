@@ -23,6 +23,7 @@ globalThis.SPA_ROUTER_VIR_HISTORY_EVENTS_CONSOLIDATED_ALREADY = false;
 // eslint-disable-next-line @typescript-eslint/unbound-method
 const originalPushState = globalHistory?.pushState;
 function newPushState(...args: any) {
+    /* node:coverage ignore next 3 */
     if (!originalPushState) {
         return;
     }
@@ -34,6 +35,7 @@ function newPushState(...args: any) {
 // eslint-disable-next-line @typescript-eslint/unbound-method
 const originalReplaceState = globalHistory?.replaceState;
 function newReplaceState(...args: any) {
+    /* node:coverage ignore next 3 */
     if (!originalReplaceState) {
         return;
     }
