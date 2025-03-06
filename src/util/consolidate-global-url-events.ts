@@ -12,20 +12,32 @@ declare global {
     var SPA_ROUTER_VIR_HISTORY_EVENTS_CONSOLIDATED_ALREADY: boolean;
 }
 
+/**
+ * Support using this in Node.js, where `history` is not present (so routes can be shared between
+ * frontend and backend).
+ */
+const globalHistory = globalThis.history as typeof globalThis.history | undefined;
+
 globalThis.SPA_ROUTER_VIR_HISTORY_EVENTS_CONSOLIDATED_ALREADY = false;
 
 // eslint-disable-next-line @typescript-eslint/unbound-method
-const originalPushState = globalThis.history.pushState;
+const originalPushState = globalHistory?.pushState;
 function newPushState(...args: any) {
-    const originalResult = originalPushState.apply(globalThis.history, args);
+    if (!originalPushState) {
+        return;
+    }
+    const originalResult = originalPushState.apply(globalHistory, args);
     globalThis.dispatchEvent(new Event(globalLocationChangeEventName));
     return originalResult;
 }
 
 // eslint-disable-next-line @typescript-eslint/unbound-method
-const originalReplaceState = globalThis.history.replaceState;
+const originalReplaceState = globalHistory?.replaceState;
 function newReplaceState(...args: any) {
-    const originalResult = originalReplaceState.apply(globalThis.history, args);
+    if (!originalReplaceState) {
+        return;
+    }
+    const originalResult = originalReplaceState.apply(globalHistory, args);
     globalThis.dispatchEvent(new Event(globalLocationChangeEventName));
     return originalResult;
 }
@@ -37,23 +49,23 @@ function newReplaceState(...args: any) {
  */
 export function consolidateGlobalUrlEvents() {
     /** This should only ever be executed once. */
-    if (globalThis.SPA_ROUTER_VIR_HISTORY_EVENTS_CONSOLIDATED_ALREADY) {
+    if (globalThis.SPA_ROUTER_VIR_HISTORY_EVENTS_CONSOLIDATED_ALREADY || !globalHistory) {
         return;
         /* node:coverage disable */
-    } else if (globalThis.history.pushState === newPushState) {
+    } else if (globalHistory.pushState === newPushState) {
         throw new GlobalUrlEventsConsolidationError(
-            `The consolidation module thinks that window events have not been consolidated yet but globalThis.history.pushState has already been overridden. Does this module have two copies in your repo?`,
+            `The consolidation module thinks that window events have not been consolidated yet but globalHistory.pushState has already been overridden. Does this module have two copies in your repo?`,
         );
-    } else if (globalThis.history.replaceState === newReplaceState) {
+    } else if (globalHistory.replaceState === newReplaceState) {
         throw new GlobalUrlEventsConsolidationError(
-            `The consolidation module thinks that window events have not been consolidated yet but globalThis.history.replaceState has already been overridden. Does this module have two copies in your repo?`,
+            `The consolidation module thinks that window events have not been consolidated yet but globalHistory.replaceState has already been overridden. Does this module have two copies in your repo?`,
         );
     }
     /* node:coverage enable */
     globalThis.SPA_ROUTER_VIR_HISTORY_EVENTS_CONSOLIDATED_ALREADY = true;
 
-    globalThis.history.pushState = newPushState;
-    globalThis.history.replaceState = newReplaceState;
+    globalHistory.pushState = newPushState;
+    globalHistory.replaceState = newReplaceState;
 
     globalThis.addEventListener('popstate', () => {
         globalThis.dispatchEvent(new Event(globalLocationChangeEventName));
