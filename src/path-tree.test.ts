@@ -1,6 +1,7 @@
 import {assert, check} from '@augment-vir/assert';
 import {describe, it, itCases} from '@augment-vir/test';
 import {PathTree, sanitizeTreePaths} from './index.js';
+import {type RemovePathsTypes} from './path-tree.js';
 import {type FullSpaRoute, type SpaRouteByPath} from './spa-route.js';
 
 describe(PathTree.name, () => {
@@ -93,11 +94,70 @@ describe(PathTree.name, () => {
             },
         } as const;
 
-        assert.deepEquals(mockPathTree.paths, expectation);
+        const testAssignment1: RemovePathsTypes<typeof mockPathTree.paths> = expectation;
+        const testAssignment2: typeof expectation = {} as RemovePathsTypes<
+            typeof mockPathTree.paths
+        >;
 
-        const testAssignment: typeof mockPathTree.paths = expectation;
+        assert.tsType<typeof expectation>().matches<RemovePathsTypes<typeof mockPathTree.paths>>();
+        assert.tsType<RemovePathsTypes<typeof mockPathTree.paths>>().matches<typeof expectation>();
+        assert
+            .tsType<RemovePathsTypes<typeof mockPathTree.paths>>()
+            .slowEquals<typeof expectation>();
+
+        assert.deepEquals(mockPathTree.pathsWithoutTypes, expectation);
+
+        const testAssignment3: typeof mockPathTree.pathsWithoutTypes = expectation;
+
+        assert.throws(() => mockPathTree.paths.children.app.PathsType);
     });
 
+    it('works with children', () => {
+        const tree = new PathTree({
+            allowBare: true,
+            children: {
+                design: {
+                    allowBare: false,
+                    children: {
+                        search: {
+                            allowBare: true,
+                            children: {
+                                ':searchParams': {},
+                            },
+                        },
+                        book: {
+                            anyChildren: true,
+                        },
+                    },
+                },
+            },
+        });
+
+        assert.isDefined(tree.paths.children.design.children);
+        assert.isDefined(tree.paths.children.design.children.book.fullPaths);
+        assert
+            .tsType<typeof tree.paths.children.design.PathsType>()
+            .equals<
+                Readonly<
+                    | ['design', 'search']
+                    | ['design', 'search', string]
+                    | ['design', 'book', ...string[]]
+                >
+            >();
+
+        assert
+            .tsType<typeof tree.PathsType>()
+            .equals<
+                Readonly<
+                    | []
+                    | ['design', 'search']
+                    | ['design', 'search', string]
+                    | ['design', 'book', ...string[]]
+                >
+            >();
+
+        tree.paths.children.design.fullPaths;
+    });
     it('works with SpaRouteByPath', () => {
         const fakePath: SpaRouteByPath<
             typeof mockPathTree.paths.children.app.fullPaths,
