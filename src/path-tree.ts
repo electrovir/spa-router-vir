@@ -1,6 +1,6 @@
 import {check} from '@augment-vir/assert';
 import {filterObject, mapObjectValues, type AnyObject, type Values} from '@augment-vir/common';
-import type {EmptyObject} from 'type-fest';
+import {type EmptyObject} from 'type-fest';
 
 /**
  * Base type for the constructor parameter tree in {@link PathTree}.

@@ -1,19 +1,19 @@
 import {check} from '@augment-vir/assert';
 import {addPrefix} from '@augment-vir/common';
 import {assertValidShape} from 'object-shape-tester';
-import {ExcludeNoUpdate, Observable, ObservableListener} from 'observavir';
+import {type ExcludeNoUpdate, Observable, type ObservableListener} from 'observavir';
 import {listenTo} from 'typed-event-target';
 import {SearchParamStrategy, buildUrl, joinUrlPaths, parseUrl} from 'url-vir';
 import {SanitizationDepthMaxed} from './errors/sanitization-depth-maxed.error.js';
 import {SpaRouterError} from './errors/spa-router.error.js';
 import {
-    FullSpaRoute,
-    ValidHashBase,
-    ValidPathsBase,
-    ValidSearchBase,
+    type FullSpaRoute,
     type SpaRoute,
+    type ValidHashBase,
+    type ValidPathsBase,
+    type ValidSearchBase,
 } from './spa-route.js';
-import {SpaRouterParams, spaRouterParamsShape} from './spa-router-params.js';
+import {type SpaRouterParams, spaRouterParamsShape} from './spa-router-params.js';
 import {shouldClickEventTriggerRouteChange} from './util/click-event-should-set-routes.js';
 import {
     consolidateGlobalUrlEvents,

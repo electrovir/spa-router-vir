@@ -1,6 +1,11 @@
-import {Overwrite} from '@augment-vir/common';
+import {type Overwrite} from '@augment-vir/common';
 import {defineShape, or} from 'object-shape-tester';
-import {FullSpaRoute, ValidHashBase, ValidPathsBase, ValidSearchBase} from './spa-route.js';
+import {
+    type FullSpaRoute,
+    type ValidHashBase,
+    type ValidPathsBase,
+    type ValidSearchBase,
+} from './spa-route.js';
 
 /**
  * A function that sanitizes a route, ensuring that the raw input matches the type safety of a

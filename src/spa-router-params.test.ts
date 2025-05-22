@@ -1,9 +1,13 @@
 import {assert} from '@augment-vir/assert';
 import {describe, it} from '@augment-vir/test';
 import {assertValidShape} from 'object-shape-tester';
-import {FullSpaRoute} from './spa-route.js';
-import {RouteSanitizer, SpaRouterParams, spaRouterParamsShape} from './spa-router-params.js';
-import {MockValidPaths} from './spa-router.mock.js';
+import {type FullSpaRoute} from './spa-route.js';
+import {
+    type RouteSanitizer,
+    type SpaRouterParams,
+    spaRouterParamsShape,
+} from './spa-router-params.js';
+import {type MockValidPaths} from './spa-router.mock.js';
 
 describe('SpaRouterParams', () => {
     it('only requires the sanitizeRoute param', () => {

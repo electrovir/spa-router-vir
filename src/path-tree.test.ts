@@ -1,7 +1,7 @@
 import {assert, check} from '@augment-vir/assert';
 import {describe, it, itCases} from '@augment-vir/test';
 import {PathTree, sanitizeTreePaths} from './index.js';
-import {SpaRouteByPath, type FullSpaRoute} from './spa-route.js';
+import {type FullSpaRoute, type SpaRouteByPath} from './spa-route.js';
 
 describe(PathTree.name, () => {
     const mockPathTree = new PathTree({

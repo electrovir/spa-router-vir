@@ -1,4 +1,4 @@
-import type {Overwrite} from '@augment-vir/common';
+import {type Overwrite} from '@augment-vir/common';
 import {defineShape, indexedKeys, isValidShape, optional, or} from 'object-shape-tester';
 
 /**

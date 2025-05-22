@@ -1,9 +1,9 @@
 import {assert, waitUntil} from '@augment-vir/assert';
-import {MaybePromise, awaitedForEach} from '@augment-vir/common';
+import {type MaybePromise, awaitedForEach} from '@augment-vir/common';
 import {describe, itCases, testWeb} from '@augment-vir/test';
 import {getCenterOfElement} from '@augment-vir/web';
 import {sendKeys, sendMouse} from '@web/test-runner-commands';
-import {ClickPayload} from '@web/test-runner-commands/dist/sendMousePlugin';
+import {type ClickPayload} from '@web/test-runner-commands/dist/sendMousePlugin';
 import {css, html, listen} from 'element-vir';
 import {shouldClickEventTriggerRouteChange} from './click-event-should-set-routes.js';
 

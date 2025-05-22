@@ -1,17 +1,17 @@
 import {assert, waitUntil} from '@augment-vir/assert';
-import {MaybePromise} from '@augment-vir/common';
+import {type MaybePromise} from '@augment-vir/common';
 import {describe, it} from '@augment-vir/test';
 import {buildUrl, parseUrl, SearchParamStrategy} from 'url-vir';
 import {
-    FullSpaRoute,
-    ValidHashBase,
-    ValidPathsBase,
-    ValidSearchBase,
+    type FullSpaRoute,
     type SpaRoute,
+    type ValidHashBase,
+    type ValidPathsBase,
+    type ValidSearchBase,
 } from './spa-route.js';
-import {SpaRouterParams} from './spa-router-params.js';
+import {type SpaRouterParams} from './spa-router-params.js';
 import {SpaRouter} from './spa-router.js';
-import {MockValidPaths, sanitizeMockPaths} from './spa-router.mock.js';
+import {type MockValidPaths, sanitizeMockPaths} from './spa-router.mock.js';
 
 describe(SpaRouter.name, () => {
     function testRouter<

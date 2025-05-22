@@ -1,13 +1,13 @@
 import {assert} from '@augment-vir/assert';
 import {describe, it, itCases} from '@augment-vir/test';
 import {
-    ValidHashBase,
-    ValidPathsBase,
-    ValidSearchBase,
     isSpaRoute,
     type SpaRoute,
+    type ValidHashBase,
+    type ValidPathsBase,
+    type ValidSearchBase,
 } from './spa-route.js';
-import {MockValidPaths} from './spa-router.mock.js';
+import {type MockValidPaths} from './spa-router.mock.js';
 
 describe('ValidPathsBase', () => {
     it('matches more specific sub types', () => {

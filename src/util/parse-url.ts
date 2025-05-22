@@ -1,6 +1,6 @@
 import {addPrefix, removePrefix} from '@augment-vir/common';
 import {parseUrl} from 'url-vir';
-import {FullSpaRoute} from '../spa-route.js';
+import {type FullSpaRoute} from '../spa-route.js';
 
 /**
  * Parse the given URL into a `FullRoute` object.
