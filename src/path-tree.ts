@@ -1,24 +1,33 @@
-import {check} from '@augment-vir/assert';
+import {assert, check} from '@augment-vir/assert';
 import {filterObject, mapObjectValues, type AnyObject, type Values} from '@augment-vir/common';
-import {type EmptyObject} from 'type-fest';
+import {type EmptyObject, type IsEqual} from 'type-fest';
 
 /**
  * Base type for the constructor parameter tree in {@link PathTree}.
  *
  * @category Internal
  */
-export type BasePathTree = {
-    allowBare: boolean;
-    children: {
-        [Path in string]:
-            | BasePathTree
-            /**
-             * If a child path is an empty object, that means that it has no children and
-             * `allowBare` is set to `true`.
-             */
-            | EmptyObject;
-    };
-};
+export type BasePathTree =
+    | {
+          /** Set true to allow this path as a bare path (without any children). */
+          allowBare: boolean;
+          children: {
+              [Path in string]:
+                  | BasePathTree
+                  /**
+                   * If a child path is an empty object, that means that it has no children and
+                   * `allowBare` is set to `true`.
+                   */
+                  | EmptyObject;
+          };
+          anyChildren?: never;
+      }
+    | {
+          allowBare?: never;
+          /** Set this to `true` to allow any nested paths (string[]). */
+          anyChildren: true;
+          children?: never;
+      };
 
 /**
  * Converts a {@link PathTree} tree to a union of possible path arrays.
@@ -27,9 +36,11 @@ export type BasePathTree = {
  */
 export type TreePaths<Tree extends Readonly<BasePathTree> | EmptyObject> = EmptyObject extends Tree
     ? Readonly<[]>
-    : Exclude<Tree, EmptyObject>['allowBare'] extends true
-      ? Readonly<[]> | NestedTreePaths<Exclude<Tree, EmptyObject>>
-      : NestedTreePaths<Exclude<Tree, EmptyObject>>;
+    : IsEqual<Exclude<Tree, EmptyObject>['anyChildren'], true> extends true
+      ? Readonly<string[]>
+      : Exclude<Tree, EmptyObject>['allowBare'] extends true
+        ? Readonly<[]> | NestedTreePaths<Exclude<Tree, EmptyObject>>
+        : NestedTreePaths<Exclude<Tree, EmptyObject>>;
 
 /**
  * Nested part of {@link TreePaths}.
@@ -46,26 +57,36 @@ export type NestedTreePaths<NestedTree extends BasePathTree> =
         : Readonly<[]>;
 
 function checkTree(tree: Readonly<BasePathTree>, pathChain: string[]): void {
-    if (!tree.allowBare && !Object.keys(tree.children).some((key) => !key.startsWith(':'))) {
+    if (
+        !tree.allowBare &&
+        !tree.anyChildren &&
+        !Object.keys(tree.children).some((key) => !key.startsWith(':'))
+    ) {
         const parentString = pathChain.length ? ` on ${pathChain.join(' -> ')}.` : '.';
         throw new Error(
             `Invalid tree: allowBare is false but there are no definite children${parentString}`,
         );
     }
 
-    Object.entries(tree.children).forEach(
-        ([
-            path,
-            childTree,
-        ]) => {
-            if (!check.isEmpty(childTree)) {
-                checkTree(childTree, [
-                    ...pathChain,
-                    path,
-                ]);
-            }
-        },
-    );
+    if (!tree.anyChildren) {
+        assert.isObject(
+            tree.children,
+            `expected children under ${pathChain.length ? pathChain[pathChain.length - 1] : 'top level'}`,
+        );
+        Object.entries(tree.children).forEach(
+            ([
+                path,
+                childTree,
+            ]) => {
+                if (!check.isEmpty(childTree)) {
+                    checkTree(childTree, [
+                        ...pathChain,
+                        path,
+                    ]);
+                }
+            },
+        );
+    }
 }
 
 /**
@@ -78,32 +99,32 @@ export type RuntimeTreePaths<
     CurrentPaths extends PropertyKey[] = [],
     CurrentPath extends PropertyKey = '',
 > = CurrentPath extends `:${string}`
-    ? EmptyObject extends Tree
-        ? Readonly<EmptyObject>
-        : Readonly<{
+    ? Tree extends infer InnerTree extends {children: any}
+        ? Readonly<{
               children: Readonly<{
-                  [ChildPath in keyof Exclude<Tree, EmptyObject>['children']]: RuntimeTreePaths<
-                      Exclude<Tree, EmptyObject>['children'][ChildPath],
+                  [ChildPath in keyof InnerTree['children']]: RuntimeTreePaths<
+                      InnerTree['children'][ChildPath],
                       [...CurrentPaths, ChildPath],
                       ChildPath
                   >;
               }>;
           }>
-    : EmptyObject extends Tree
+        : Readonly<EmptyObject>
+    : Tree extends infer InnerTree extends {children: any}
       ? Readonly<{
             path: CurrentPath;
             fullPaths: Readonly<CurrentPaths>;
-        }>
-      : Readonly<{
-            path: CurrentPath;
-            fullPaths: Readonly<CurrentPaths>;
             children: Readonly<{
-                [ChildPath in keyof Exclude<Tree, EmptyObject>['children']]: RuntimeTreePaths<
-                    Exclude<Tree, EmptyObject>['children'][ChildPath],
+                [ChildPath in keyof InnerTree['children']]: RuntimeTreePaths<
+                    InnerTree['children'][ChildPath],
                     [...CurrentPaths, ChildPath],
                     ChildPath
                 >;
             }>;
+        }>
+      : Readonly<{
+            path: CurrentPath;
+            fullPaths: Readonly<CurrentPaths>;
         }>;
 
 function generatePathTreePaths<const Tree extends BasePathTree | EmptyObject>(
@@ -209,7 +230,10 @@ export function sanitizeTreePaths(
     rawPaths: ReadonlyArray<string>,
     tree: Readonly<BasePathTree | EmptyObject>,
 ): ReadonlyArray<string> {
-    if ('allowBare' in tree) {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if ('anyChildren' in tree && tree.anyChildren) {
+        return rawPaths;
+    } else if ('allowBare' in tree) {
         if (check.isLengthAtLeast(rawPaths, 1)) {
             const matchedChild = tree.children[rawPaths[0]];
 

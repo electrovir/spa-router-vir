@@ -25,6 +25,9 @@ describe(PathTree.name, () => {
                     settings: {},
                 },
             },
+            withAny: {
+                anyChildren: true,
+            },
             legal: {},
         },
     });
@@ -81,6 +84,12 @@ describe(PathTree.name, () => {
                         'legal',
                     ],
                 },
+                withAny: {
+                    path: 'withAny',
+                    fullPaths: [
+                        'withAny',
+                    ],
+                },
             },
         } as const;
 
@@ -125,6 +134,39 @@ describe(PathTree.name, () => {
         );
     });
 
+    it('requires correct types', () => {
+        assert.throws(
+            () =>
+                new PathTree({
+                    allowBare: false,
+                    children: {
+                        app: {
+                            anyChildren: true,
+                            // @ts-expect-error: `allowBare` cannot be used with `anyChildren: true`
+                            allowBare: true,
+                        },
+                        app2: {
+                            anyChildren: true,
+                            // @ts-expect-error: `children` cannot be used with `anyChildren: true`
+                            children: {},
+                        },
+                        app3: {
+                            children: {},
+                            // @ts-expect-error: `anyChildren` cannot be used with `children`
+                            anyChildren: true,
+                        },
+                        // @ts-expect-error: missing `children`
+                        app4: {
+                            allowBare: true,
+                        },
+                    },
+                }),
+            {
+                matchMessage: 'expected children',
+            },
+        );
+    });
+
     it('creates paths types', () => {
         assert
             .tsType<typeof mockPathTree.PathsType>()
@@ -136,6 +178,7 @@ describe(PathTree.name, () => {
                     | ['app', 'uploads', 'files']
                     | ['app', 'uploads', 'files', string]
                     | ['app', 'settings']
+                    | ['withAny', ...string[]]
                     | ['legal']
                 >
             >();
@@ -158,6 +201,45 @@ describe(PathTree.name, () => {
         {
             it: 'keeps valid empty path',
             input: [],
+            expect: undefined,
+        },
+        {
+            it: 'allows bare any children path',
+            input: ['withAny'],
+            expect: undefined,
+        },
+        {
+            it: 'allows 1 any children',
+            input: [
+                'withAny',
+                'child',
+            ],
+            expect: undefined,
+        },
+        {
+            it: 'allows 2 any children',
+            input: [
+                'withAny',
+                'child',
+                'child 2',
+            ],
+            expect: undefined,
+        },
+        {
+            it: 'allows any children',
+            input: [
+                'withAny',
+                'child 1',
+                'child 2',
+                'child 3',
+                'child 4',
+                'child 5',
+                'child 6',
+                'child 7',
+                'child 8',
+                'child 9',
+                'child 10',
+            ],
             expect: undefined,
         },
         {
