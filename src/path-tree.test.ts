@@ -1,43 +1,42 @@
 import {assert, check} from '@augment-vir/assert';
 import {describe, it, itCases} from '@augment-vir/test';
 import {PathTree, sanitizeTreePaths} from './index.js';
-import {type RemovePathsTypes} from './path-tree.js';
+import {type GenericTreePaths, type RemovePathsTypes} from './path-tree.js';
 import {type FullSpaRoute, type SpaRouteByPath} from './spa-route.js';
 
-describe(PathTree.name, () => {
-    const mockPathTree = new PathTree({
-        allowBare: true,
-        children: {
-            app: {
-                allowBare: true,
-                children: {
-                    uploads: {
-                        allowBare: false,
-                        children: {
-                            files: {
-                                allowBare: true,
-                                children: {
-                                    ':file-path': {
-                                        allowBare: true,
-                                        children: {
-                                            view: {},
-                                        },
+const mockPathTree = new PathTree({
+    allowBare: true,
+    children: {
+        app: {
+            allowBare: true,
+            children: {
+                uploads: {
+                    allowBare: false,
+                    children: {
+                        files: {
+                            allowBare: true,
+                            children: {
+                                ':file-path': {
+                                    allowBare: true,
+                                    children: {
+                                        view: {},
                                     },
                                 },
                             },
-                            patients: {},
                         },
+                        patients: {},
                     },
-                    settings: {},
                 },
+                settings: {},
             },
-            withAny: {
-                anyChildren: true,
-            },
-            legal: {},
         },
-    });
-
+        withAny: {
+            anyChildren: true,
+        },
+        legal: {},
+    },
+});
+describe(PathTree.name, () => {
     it('generates a paths object', () => {
         type ExpectedType = Readonly<{
             path: '';
@@ -563,5 +562,12 @@ describe(sanitizeTreePaths.name, () => {
                 },
             }),
         );
+    });
+});
+
+describe('GenericTreePaths', () => {
+    it('is compatible with concrete values', () => {
+        const testAssignment: GenericTreePaths = mockPathTree.paths.children.app.children.settings;
+        const testAssignment2: GenericTreePaths = mockPathTree.paths.children.app.children.uploads;
     });
 });

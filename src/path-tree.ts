@@ -182,6 +182,21 @@ export type RuntimeTreePaths<
           }>;
 
 /**
+ * A generic version of {@link RuntimeTreePaths} that any {@link PathTree.paths} value can be assigned
+ * to.
+ *
+ * @category Internal
+ */
+export type GenericTreePaths = Readonly<{
+    /** Fills a path that has a path param. */
+    fill?: (pathParam: string) => GenericTreePaths;
+    path: string;
+    fullPaths: ReadonlyArray<string>;
+    PathsType: ReadonlyArray<string>;
+    children?: Readonly<Record<string, GenericTreePaths>>;
+}>;
+
+/**
  * Remove all `PathsType` properties from a path tree.
  *
  * @category Internal

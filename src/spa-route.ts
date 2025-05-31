@@ -1,4 +1,3 @@
-import {type Overwrite} from '@augment-vir/common';
 import {defineShape, indexedKeys, isValidShape, optional, or} from 'object-shape-tester';
 
 /**
@@ -105,14 +104,11 @@ export function isSpaRoute(input: unknown): input is SpaRoute {
  * ```
  */
 export type SpaRouteByPath<
-    Paths extends OriginalFullSpaRoute['paths'],
-    OriginalFullSpaRoute extends FullSpaRoute,
-> = Overwrite<
-    OriginalFullSpaRoute,
-    {
-        paths: Extract<OriginalFullSpaRoute['paths'], Readonly<[...Paths, ...any[]]>>;
-    }
->;
+    Paths extends Readonly<OriginalFullSpaRoute['paths']>,
+    OriginalFullSpaRoute extends Readonly<Pick<FullSpaRoute, 'paths'>>,
+> = OriginalFullSpaRoute & {
+    paths: Extract<OriginalFullSpaRoute['paths'], Readonly<[...Paths, ...any[]]>>;
+};
 
 /**
  * Narrow a path to only the valid children paths of the given path.
