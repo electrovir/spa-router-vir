@@ -1,9 +1,10 @@
 import {assert, check} from '@augment-vir/assert';
 import {
-    copyThroughJson,
+    deepCopy,
     filterObject,
     mapObjectValues,
     type AnyObject,
+    type RemoveLastTupleEntry,
     type Values,
 } from '@augment-vir/common';
 import {type EmptyObject, type IsEqual} from 'type-fest';
@@ -106,20 +107,39 @@ export type RuntimeTreePaths<
     CurrentPaths extends PropertyKey[] = [],
     CurrentPath extends PropertyKey = '',
 > = CurrentPath extends `:${string}`
-    ? EmptyObject extends Tree
-        ? Readonly<EmptyObject>
-        : Tree extends {anyChildren: true}
-          ? Readonly<EmptyObject>
-          : Readonly<{
-                children: Readonly<{
-                    [ChildPath in keyof Exclude<Tree, EmptyObject>['children']]: RuntimeTreePaths<
-                        Extract<Exclude<Tree, EmptyObject>['children'], AnyObject>[ChildPath],
-                        OriginalTree,
-                        [...CurrentPaths, ChildPath],
-                        ChildPath
-                    >;
-                }>;
+    ? <PathParam extends string = string>(
+          pathParam: PathParam,
+      ) => EmptyObject extends Tree
+          ? Readonly<{
+                path: PathParam;
+                fullPaths: Readonly<[...RemoveLastTupleEntry<CurrentPaths>, PathParam]>;
+                PathsType: Readonly<
+                    ValidPaths<OriginalTree, [...RemoveLastTupleEntry<CurrentPaths>, PathParam]>
+                >;
             }>
+          : Tree extends {anyChildren: true}
+            ? Readonly<{
+                  path: PathParam;
+                  fullPaths: Readonly<[...RemoveLastTupleEntry<CurrentPaths>, PathParam]>;
+                  PathsType: Readonly<
+                      ValidPaths<OriginalTree, [...RemoveLastTupleEntry<CurrentPaths>, PathParam]>
+                  >;
+              }>
+            : Readonly<{
+                  path: PathParam;
+                  fullPaths: Readonly<[...RemoveLastTupleEntry<CurrentPaths>, PathParam]>;
+                  PathsType: Readonly<
+                      ValidPaths<OriginalTree, [...RemoveLastTupleEntry<CurrentPaths>, PathParam]>
+                  >;
+                  children: Readonly<{
+                      [ChildPath in keyof Exclude<Tree, EmptyObject>['children']]: RuntimeTreePaths<
+                          Extract<Exclude<Tree, EmptyObject>['children'], AnyObject>[ChildPath],
+                          OriginalTree,
+                          [...RemoveLastTupleEntry<CurrentPaths>, PathParam, ChildPath],
+                          ChildPath
+                      >;
+                  }>;
+              }>
     : EmptyObject extends Tree
       ? Readonly<{
             path: CurrentPath;
@@ -154,14 +174,16 @@ export type RuntimeTreePaths<
 export type RemovePathsTypes<Paths> =
     Paths extends ReadonlyArray<any>
         ? Paths
-        : Paths extends Readonly<AnyObject>
-          ? Omit<
-                Readonly<{
-                    [Key in keyof Paths]: RemovePathsTypes<Paths[Key]>;
-                }>,
-                'PathsType'
-            >
-          : Paths;
+        : Paths extends (pathParam: string) => infer ReturnValue
+          ? (pathParam: string) => RemovePathsTypes<ReturnValue>
+          : Paths extends Readonly<AnyObject>
+            ? Omit<
+                  Readonly<{
+                      [Key in keyof Paths]: RemovePathsTypes<Paths[Key]>;
+                  }>,
+                  'PathsType'
+              >
+            : Paths;
 
 /**
  * Remove all `PathsType` properties from a path tree.
@@ -169,7 +191,7 @@ export type RemovePathsTypes<Paths> =
  * @category Internal
  */
 function removePathsTypes<Paths>(paths: Paths): RemovePathsTypes<Paths> {
-    return copyThroughJson(paths) as RemovePathsTypes<Paths>;
+    return deepCopy(paths) as RemovePathsTypes<Paths>;
 }
 
 /**
@@ -190,20 +212,28 @@ function generatePathTreePaths<const Tree extends BasePathTree | EmptyObject>(
         ? (tree.children as BasePathTree['children'])
         : undefined;
     const currentPath = parentPaths[parentPaths.length - 1] || '';
-    const isPathParam = currentPath.startsWith(':');
 
-    return Object.defineProperty(
+    if (currentPath.startsWith(':')) {
+        return ((pathParam: string) => {
+            return generatePathTreePaths(tree, [
+                ...parentPaths.slice(0, -1),
+                pathParam,
+            ]);
+        }) as any;
+    }
+
+    const generatedTree = Object.defineProperty(
         filterObject(
             {
-                path: isPathParam ? undefined : currentPath,
-                fullPaths: isPathParam ? undefined : parentPaths,
+                path: currentPath,
+                fullPaths: parentPaths,
                 children: children
-                    ? mapObjectValues(children, (childPath, childTree) =>
-                          generatePathTreePaths<BasePathTree | EmptyObject>(childTree, [
+                    ? mapObjectValues(children, (childPath, childTree) => {
+                          return generatePathTreePaths<BasePathTree | EmptyObject>(childTree, [
                               ...parentPaths,
                               childPath,
-                          ]),
-                      )
+                          ]);
+                      })
                     : undefined,
             },
             (key, value) => check.isDefined(value),
@@ -217,6 +247,8 @@ function generatePathTreePaths<const Tree extends BasePathTree | EmptyObject>(
             },
         },
     ) as AnyObject as RuntimeTreePaths<Tree>;
+
+    return generatedTree;
 }
 
 /**

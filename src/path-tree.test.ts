@@ -17,7 +17,12 @@ describe(PathTree.name, () => {
                             files: {
                                 allowBare: true,
                                 children: {
-                                    ':file-path': {},
+                                    ':file-path': {
+                                        allowBare: true,
+                                        children: {
+                                            view: {},
+                                        },
+                                    },
                                 },
                             },
                             patients: {},
@@ -34,7 +39,117 @@ describe(PathTree.name, () => {
     });
 
     it('generates a paths object', () => {
-        const expectation = {
+        type ExpectedType = Readonly<{
+            path: '';
+            fullPaths: Readonly<[]>;
+            PathsType: Readonly<
+                | []
+                | ['legal']
+                | ['withAny', ...string[]]
+                | ['app']
+                | ['app', 'settings']
+                | ['app', 'uploads', 'patients']
+                | ['app', 'uploads', 'files']
+                | ['app', 'uploads', 'files', string]
+                | ['app', 'uploads', 'files', string, 'view']
+            >;
+            children: Readonly<{
+                app: Readonly<{
+                    path: 'app';
+                    fullPaths: Readonly<['app']>;
+                    PathsType: Readonly<
+                        | ['app']
+                        | ['app', 'settings']
+                        | ['app', 'uploads', 'patients']
+                        | ['app', 'uploads', 'files']
+                        | ['app', 'uploads', 'files', string]
+                        | ['app', 'uploads', 'files', string, 'view']
+                    >;
+                    children: Readonly<{
+                        settings: Readonly<{
+                            path: 'settings';
+                            fullPaths: Readonly<['app', 'settings']>;
+                            PathsType: Readonly<['app', 'settings']>;
+                        }>;
+                        uploads: Readonly<{
+                            path: 'uploads';
+                            fullPaths: Readonly<['app', 'uploads']>;
+                            PathsType: Readonly<
+                                | ['app', 'uploads', 'patients']
+                                | ['app', 'uploads', 'files']
+                                | ['app', 'uploads', 'files', string]
+                                | ['app', 'uploads', 'files', string, 'view']
+                            >;
+                            children: Readonly<{
+                                files: Readonly<{
+                                    fullPaths: Readonly<['app', 'uploads', 'files']>;
+                                    path: 'files';
+                                    PathsType: Readonly<
+                                        | ['app', 'uploads', 'files']
+                                        | ['app', 'uploads', 'files', string]
+                                        | ['app', 'uploads', 'files', string, 'view']
+                                    >;
+                                    children: Readonly<{
+                                        ':file-path'<PathParam extends string = string>(
+                                            pathParam: PathParam,
+                                        ): Readonly<{
+                                            path: PathParam;
+                                            fullPaths: Readonly<
+                                                ['app', 'uploads', 'files', PathParam]
+                                            >;
+                                            PathsType: Readonly<
+                                                | ['app', 'uploads', 'files', PathParam]
+                                                | ['app', 'uploads', 'files', PathParam, 'view']
+                                            >;
+                                            children: Readonly<{
+                                                view: Readonly<{
+                                                    path: 'view';
+                                                    fullPaths: Readonly<
+                                                        [
+                                                            'app',
+                                                            'uploads',
+                                                            'files',
+                                                            PathParam,
+                                                            'view',
+                                                        ]
+                                                    >;
+                                                    PathsType: Readonly<
+                                                        [
+                                                            'app',
+                                                            'uploads',
+                                                            'files',
+                                                            PathParam,
+                                                            'view',
+                                                        ]
+                                                    >;
+                                                }>;
+                                            }>;
+                                        }>;
+                                    }>;
+                                }>;
+                                patients: Readonly<{
+                                    path: 'patients';
+                                    fullPaths: Readonly<['app', 'uploads', 'patients']>;
+                                    PathsType: Readonly<['app', 'uploads', 'patients']>;
+                                }>;
+                            }>;
+                        }>;
+                    }>;
+                }>;
+                legal: Readonly<{
+                    path: 'legal';
+                    fullPaths: Readonly<['legal']>;
+                    PathsType: Readonly<['legal']>;
+                }>;
+                withAny: Readonly<{
+                    path: 'withAny';
+                    fullPaths: Readonly<['withAny']>;
+                    PathsType: Readonly<['withAny', ...string[]]>;
+                }>;
+            }>;
+        }>;
+
+        const expectedValue: RemovePathsTypes<ExpectedType> = {
             path: '',
             fullPaths: [],
             children: {
@@ -43,11 +158,11 @@ describe(PathTree.name, () => {
                     fullPaths: ['app'],
                     children: {
                         settings: {
+                            path: 'settings',
                             fullPaths: [
                                 'app',
                                 'settings',
                             ],
-                            path: 'settings',
                         },
                         uploads: {
                             path: 'uploads',
@@ -57,33 +172,49 @@ describe(PathTree.name, () => {
                             ],
                             children: {
                                 files: {
+                                    path: 'files',
                                     fullPaths: [
                                         'app',
                                         'uploads',
                                         'files',
                                     ],
-                                    path: 'files',
                                     children: {
-                                        ':file-path': {},
+                                        ':file-path'<PathParam>(pathParam: PathParam) {
+                                            return {
+                                                path: pathParam,
+                                                fullPaths: [
+                                                    'app',
+                                                    'uploads',
+                                                    'files',
+                                                    pathParam,
+                                                ],
+                                                children: {
+                                                    view: {
+                                                        fullPaths: [
+                                                            'app',
+                                                            'uploads',
+                                                            'files',
+                                                            pathParam,
+                                                            'view',
+                                                        ],
+                                                        path: 'view',
+                                                    },
+                                                },
+                                            };
+                                        },
                                     },
                                 },
                                 patients: {
+                                    path: 'patients',
                                     fullPaths: [
                                         'app',
                                         'uploads',
                                         'patients',
                                     ],
-                                    path: 'patients',
                                 },
                             },
                         },
                     },
-                },
-                legal: {
-                    path: 'legal',
-                    fullPaths: [
-                        'legal',
-                    ],
                 },
                 withAny: {
                     path: 'withAny',
@@ -91,23 +222,43 @@ describe(PathTree.name, () => {
                         'withAny',
                     ],
                 },
+                legal: {
+                    path: 'legal',
+                    fullPaths: [
+                        'legal',
+                    ],
+                },
             },
-        } as const;
+        };
 
-        const testAssignment1: RemovePathsTypes<typeof mockPathTree.paths> = expectation;
-        const testAssignment2: typeof expectation = {} as RemovePathsTypes<
+        assert.tsType(mockPathTree.paths).slowEquals<ExpectedType>();
+
+        const testAssignment1: RemovePathsTypes<typeof mockPathTree.paths> = expectedValue;
+        const testAssignment2: typeof expectedValue = {} as RemovePathsTypes<
             typeof mockPathTree.paths
         >;
 
-        assert.tsType<typeof expectation>().matches<RemovePathsTypes<typeof mockPathTree.paths>>();
-        assert.tsType<RemovePathsTypes<typeof mockPathTree.paths>>().matches<typeof expectation>();
+        assert
+            .tsType<typeof expectedValue>()
+            .matches<RemovePathsTypes<typeof mockPathTree.paths>>();
         assert
             .tsType<RemovePathsTypes<typeof mockPathTree.paths>>()
-            .slowEquals<typeof expectation>();
+            .matches<typeof expectedValue>();
+        assert
+            .tsType<RemovePathsTypes<typeof mockPathTree.paths>>()
+            .slowEquals<typeof expectedValue>();
 
-        assert.deepEquals(mockPathTree.pathsWithoutTypes, expectation);
+        assert.deepEquals(
+            Object.keys(
+                mockPathTree.pathsWithoutTypes.children.app.children.uploads.children.files
+                    .children,
+            ),
+            Object.keys(expectedValue.children.app.children.uploads.children.files.children),
+        );
 
-        const testAssignment3: typeof mockPathTree.pathsWithoutTypes = expectation;
+        assert.deepEquals(mockPathTree.pathsWithoutTypes, expectedValue);
+
+        const testAssignment3: typeof mockPathTree.pathsWithoutTypes = expectedValue;
 
         assert.throws(() => mockPathTree.paths.children.app.PathsType);
     });
@@ -170,6 +321,27 @@ describe(PathTree.name, () => {
 
         assert.tsType(fakePath.paths[0]).equals<'app'>();
         assert.tsType(fakePath.paths[1]).equals<'uploads' | 'settings' | undefined>();
+    });
+
+    it('allows inserting a path param', () => {
+        const filledPathParam =
+            mockPathTree.paths.children.app.children.uploads.children.files.children[':file-path'](
+                'my-file',
+            );
+
+        assert
+            .tsType(filledPathParam.fullPaths)
+            .equals<Readonly<['app', 'uploads', 'files', 'my-file']>>();
+
+        assert.deepEquals(
+            mockPathTree.paths.children.app.children.uploads.children.files.children[':file-path'](
+                'my-file',
+            ).fullPaths,
+            [
+                ...mockPathTree.paths.children.app.children.uploads.children.files.fullPaths,
+                'my-file',
+            ],
+        );
     });
 
     it('rejects an invalid tree', () => {
@@ -237,6 +409,7 @@ describe(PathTree.name, () => {
                     | ['app', 'uploads', 'patients']
                     | ['app', 'uploads', 'files']
                     | ['app', 'uploads', 'files', string]
+                    | ['app', 'uploads', 'files', string, 'view']
                     | ['app', 'settings']
                     | ['withAny', ...string[]]
                     | ['legal']
