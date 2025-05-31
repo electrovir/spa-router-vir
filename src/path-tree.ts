@@ -97,6 +97,48 @@ function checkTree(tree: Readonly<BasePathTree>, pathChain: string[]): void {
 }
 
 /**
+ * {@link RuntimeTreePaths} but only for sub-trees of path-param paths.
+ *
+ * @category Internal
+ */
+export type TreeWithParams<
+    Tree extends Readonly<BasePathTree | EmptyObject>,
+    OriginalTree extends Readonly<BasePathTree | EmptyObject>,
+    CurrentPaths extends PropertyKey[],
+    PathParam extends string,
+> = EmptyObject extends Tree
+    ? Readonly<{
+          path: PathParam;
+          fullPaths: Readonly<[...RemoveLastTupleEntry<CurrentPaths>, PathParam]>;
+          PathsType: Readonly<
+              ValidPaths<OriginalTree, [...RemoveLastTupleEntry<CurrentPaths>, PathParam]>
+          >;
+      }>
+    : Tree extends {anyChildren: true}
+      ? Readonly<{
+            path: PathParam;
+            fullPaths: Readonly<[...RemoveLastTupleEntry<CurrentPaths>, PathParam]>;
+            PathsType: Readonly<
+                ValidPaths<OriginalTree, [...RemoveLastTupleEntry<CurrentPaths>, PathParam]>
+            >;
+        }>
+      : Readonly<{
+            path: PathParam;
+            fullPaths: Readonly<[...RemoveLastTupleEntry<CurrentPaths>, PathParam]>;
+            PathsType: Readonly<
+                ValidPaths<OriginalTree, [...RemoveLastTupleEntry<CurrentPaths>, PathParam]>
+            >;
+            children: Readonly<{
+                [ChildPath in keyof Exclude<Tree, EmptyObject>['children']]: RuntimeTreePaths<
+                    Extract<Exclude<Tree, EmptyObject>['children'], AnyObject>[ChildPath],
+                    OriginalTree,
+                    [...RemoveLastTupleEntry<CurrentPaths>, PathParam, ChildPath],
+                    ChildPath
+                >;
+            }>;
+        }>;
+
+/**
  * Generates the types for {@link PathTree.paths}.
  *
  * @category Internal
@@ -107,39 +149,12 @@ export type RuntimeTreePaths<
     CurrentPaths extends PropertyKey[] = [],
     CurrentPath extends PropertyKey = '',
 > = CurrentPath extends `:${string}`
-    ? <PathParam extends string = string>(
-          pathParam: PathParam,
-      ) => EmptyObject extends Tree
-          ? Readonly<{
-                path: PathParam;
-                fullPaths: Readonly<[...RemoveLastTupleEntry<CurrentPaths>, PathParam]>;
-                PathsType: Readonly<
-                    ValidPaths<OriginalTree, [...RemoveLastTupleEntry<CurrentPaths>, PathParam]>
-                >;
-            }>
-          : Tree extends {anyChildren: true}
-            ? Readonly<{
-                  path: PathParam;
-                  fullPaths: Readonly<[...RemoveLastTupleEntry<CurrentPaths>, PathParam]>;
-                  PathsType: Readonly<
-                      ValidPaths<OriginalTree, [...RemoveLastTupleEntry<CurrentPaths>, PathParam]>
-                  >;
-              }>
-            : Readonly<{
-                  path: PathParam;
-                  fullPaths: Readonly<[...RemoveLastTupleEntry<CurrentPaths>, PathParam]>;
-                  PathsType: Readonly<
-                      ValidPaths<OriginalTree, [...RemoveLastTupleEntry<CurrentPaths>, PathParam]>
-                  >;
-                  children: Readonly<{
-                      [ChildPath in keyof Exclude<Tree, EmptyObject>['children']]: RuntimeTreePaths<
-                          Extract<Exclude<Tree, EmptyObject>['children'], AnyObject>[ChildPath],
-                          OriginalTree,
-                          [...RemoveLastTupleEntry<CurrentPaths>, PathParam, ChildPath],
-                          ChildPath
-                      >;
-                  }>;
-              }>
+    ? TreeWithParams<Tree, OriginalTree, CurrentPaths, string> & {
+          /** Fill the path param with a value. */
+          fill: <PathParam extends string = string>(
+              pathParam: PathParam,
+          ) => TreeWithParams<Tree, OriginalTree, CurrentPaths, PathParam>;
+      }
     : EmptyObject extends Tree
       ? Readonly<{
             path: CurrentPath;
@@ -213,15 +228,6 @@ function generatePathTreePaths<const Tree extends BasePathTree | EmptyObject>(
         : undefined;
     const currentPath = parentPaths[parentPaths.length - 1] || '';
 
-    if (currentPath.startsWith(':')) {
-        return ((pathParam: string) => {
-            return generatePathTreePaths(tree, [
-                ...parentPaths.slice(0, -1),
-                pathParam,
-            ]);
-        }) as any;
-    }
-
     const generatedTree = Object.defineProperty(
         filterObject(
             {
@@ -247,6 +253,18 @@ function generatePathTreePaths<const Tree extends BasePathTree | EmptyObject>(
             },
         },
     ) as AnyObject as RuntimeTreePaths<Tree>;
+
+    if (currentPath.startsWith(':')) {
+        return {
+            ...generatedTree,
+            fill: (pathParam: string) => {
+                return generatePathTreePaths(tree, [
+                    ...parentPaths.slice(0, -1),
+                    pathParam,
+                ]);
+            },
+        } as any;
+    }
 
     return generatedTree;
 }

@@ -90,38 +90,59 @@ describe(PathTree.name, () => {
                                         | ['app', 'uploads', 'files', string, 'view']
                                     >;
                                     children: Readonly<{
-                                        ':file-path'<PathParam extends string = string>(
-                                            pathParam: PathParam,
-                                        ): Readonly<{
-                                            path: PathParam;
+                                        ':file-path': Readonly<{
+                                            path: string;
                                             fullPaths: Readonly<
-                                                ['app', 'uploads', 'files', PathParam]
+                                                ['app', 'uploads', 'files', string]
                                             >;
                                             PathsType: Readonly<
-                                                | ['app', 'uploads', 'files', PathParam]
-                                                | ['app', 'uploads', 'files', PathParam, 'view']
+                                                | ['app', 'uploads', 'files', string]
+                                                | ['app', 'uploads', 'files', string, 'view']
                                             >;
                                             children: Readonly<{
                                                 view: Readonly<{
                                                     path: 'view';
                                                     fullPaths: Readonly<
-                                                        [
-                                                            'app',
-                                                            'uploads',
-                                                            'files',
-                                                            PathParam,
-                                                            'view',
-                                                        ]
+                                                        ['app', 'uploads', 'files', string, 'view']
                                                     >;
                                                     PathsType: Readonly<
-                                                        [
-                                                            'app',
-                                                            'uploads',
-                                                            'files',
-                                                            PathParam,
-                                                            'view',
-                                                        ]
+                                                        ['app', 'uploads', 'files', string, 'view']
                                                     >;
+                                                }>;
+                                            }>;
+                                            fill<PathParam extends string = string>(
+                                                pathParam: PathParam,
+                                            ): Readonly<{
+                                                path: PathParam;
+                                                fullPaths: Readonly<
+                                                    ['app', 'uploads', 'files', PathParam]
+                                                >;
+                                                PathsType: Readonly<
+                                                    | ['app', 'uploads', 'files', PathParam]
+                                                    | ['app', 'uploads', 'files', PathParam, 'view']
+                                                >;
+                                                children: Readonly<{
+                                                    view: Readonly<{
+                                                        path: 'view';
+                                                        fullPaths: Readonly<
+                                                            [
+                                                                'app',
+                                                                'uploads',
+                                                                'files',
+                                                                PathParam,
+                                                                'view',
+                                                            ]
+                                                        >;
+                                                        PathsType: Readonly<
+                                                            [
+                                                                'app',
+                                                                'uploads',
+                                                                'files',
+                                                                PathParam,
+                                                                'view',
+                                                            ]
+                                                        >;
+                                                    }>;
                                                 }>;
                                             }>;
                                         }>;
@@ -179,28 +200,49 @@ describe(PathTree.name, () => {
                                         'files',
                                     ],
                                     children: {
-                                        ':file-path'<PathParam>(pathParam: PathParam) {
-                                            return {
-                                                path: pathParam,
-                                                fullPaths: [
-                                                    'app',
-                                                    'uploads',
-                                                    'files',
-                                                    pathParam,
-                                                ],
-                                                children: {
-                                                    view: {
-                                                        fullPaths: [
-                                                            'app',
-                                                            'uploads',
-                                                            'files',
-                                                            pathParam,
-                                                            'view',
-                                                        ],
-                                                        path: 'view',
-                                                    },
+                                        ':file-path': {
+                                            path: ':file-path',
+                                            fullPaths: [
+                                                'app',
+                                                'uploads',
+                                                'files',
+                                                ':file-path',
+                                            ],
+                                            children: {
+                                                view: {
+                                                    fullPaths: [
+                                                        'app',
+                                                        'uploads',
+                                                        'files',
+                                                        ':file-path',
+                                                        'view',
+                                                    ],
+                                                    path: 'view',
                                                 },
-                                            };
+                                            },
+                                            fill<PathParam>(pathParam: PathParam) {
+                                                return {
+                                                    path: pathParam,
+                                                    fullPaths: [
+                                                        'app',
+                                                        'uploads',
+                                                        'files',
+                                                        pathParam,
+                                                    ],
+                                                    children: {
+                                                        view: {
+                                                            fullPaths: [
+                                                                'app',
+                                                                'uploads',
+                                                                'files',
+                                                                pathParam,
+                                                                'view',
+                                                            ],
+                                                            path: 'view',
+                                                        },
+                                                    },
+                                                };
+                                            },
                                         },
                                     },
                                 },
@@ -325,18 +367,18 @@ describe(PathTree.name, () => {
 
     it('allows inserting a path param', () => {
         const filledPathParam =
-            mockPathTree.paths.children.app.children.uploads.children.files.children[':file-path'](
-                'my-file',
-            );
+            mockPathTree.paths.children.app.children.uploads.children.files.children[
+                ':file-path'
+            ].fill('my-file');
 
         assert
             .tsType(filledPathParam.fullPaths)
             .equals<Readonly<['app', 'uploads', 'files', 'my-file']>>();
 
         assert.deepEquals(
-            mockPathTree.paths.children.app.children.uploads.children.files.children[':file-path'](
-                'my-file',
-            ).fullPaths,
+            mockPathTree.paths.children.app.children.uploads.children.files.children[
+                ':file-path'
+            ].fill('my-file').fullPaths,
             [
                 ...mockPathTree.paths.children.app.children.uploads.children.files.fullPaths,
                 'my-file',
