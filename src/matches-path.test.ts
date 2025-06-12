@@ -233,6 +233,37 @@ describe(routeHasPaths.name, () => {
         );
     });
 
+    it('type guards with an exact match', () => {
+        const route = {
+            paths: [
+                'app',
+                'patients',
+            ] satisfies (typeof mockTree.paths.children.app.children.patients)['PathsType'] as (typeof mockTree.paths.children.app)['PathsType'],
+        };
+
+        if (
+            routeHasPaths(route, mockTree.paths.children.app.children.patients, {
+                exactMatch: true,
+            })
+        ) {
+            assert.tsType(route.paths).equals<Readonly<['app', 'patients']>>();
+        }
+    });
+    it('type guards a non-exact match', () => {
+        const route = {
+            paths: [
+                'app',
+                'patients',
+            ] satisfies (typeof mockTree.paths.children.app.children.patients)['PathsType'] as (typeof mockTree.paths.children.app)['PathsType'],
+        };
+
+        if (routeHasPaths(route, mockTree.paths.children.app.children.patients)) {
+            assert
+                .tsType(route.paths)
+                .equals<typeof mockTree.paths.children.app.children.patients.PathsType>();
+        }
+    });
+
     itCases(routeHasPaths, [
         {
             it: 'matches path params',

@@ -35,7 +35,7 @@ export function exactlyMatchesPaths<
 >(
     currentPaths: ReadonlyArray<string>,
     treePaths: Readonly<TreePaths>,
-): currentPaths is Readonly<TreePaths['PathsType']> {
+): currentPaths is Readonly<TreePaths['fullPaths']> {
     return (
         treePaths.fullPaths.length === currentPaths.length && matchesPaths(currentPaths, treePaths)
     );
@@ -46,14 +46,14 @@ export function exactlyMatchesPaths<
  *
  * @category Internal
  */
-export type RouteHasPathsOptions = PartialWithUndefined<{
+export type RouteHasPathsOptions<ExactMatch extends boolean = boolean> = PartialWithUndefined<{
     /**
      * If true, requires exact equality instead of just checking if the tree paths are a prefix of
      * the current route paths.
      *
      * @default false
      */
-    exactMatch: boolean;
+    exactMatch: ExactMatch;
 }>;
 
 /**
@@ -64,11 +64,14 @@ export type RouteHasPathsOptions = PartialWithUndefined<{
 export function routeHasPaths<
     const TreePaths extends Readonly<Pick<GenericTreePaths, 'fullPaths' | 'PathsType'>>,
     const Route extends Readonly<Pick<FullSpaRoute, 'paths'>>,
+    const ExactMatch extends boolean = false,
 >(
     currentRoute: Readonly<Route>,
     treePaths: Readonly<TreePaths>,
-    options?: Readonly<RouteHasPathsOptions>,
-): currentRoute is Readonly<SpaRouteByPath<TreePaths['PathsType'], Route>> {
+    options?: Readonly<RouteHasPathsOptions<ExactMatch>>,
+): currentRoute is ExactMatch extends true
+    ? Readonly<Route & {paths: TreePaths['fullPaths']}>
+    : Readonly<SpaRouteByPath<TreePaths['PathsType'], Route>> {
     if (options?.exactMatch) {
         return exactlyMatchesPaths(currentRoute.paths, treePaths);
     } else {
