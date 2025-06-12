@@ -1,3 +1,5 @@
+import {check} from '@augment-vir/assert';
+import {type PartialWithUndefined} from '@augment-vir/common';
 import {type GenericTreePaths, type PathTree} from './path-tree.js';
 import {type FullSpaRoute, type SpaRouteByPath} from './spa-route.js';
 
@@ -23,6 +25,37 @@ export function matchesPaths<
 }
 
 /**
+ * Checks if a given path array exactly equals the given {@link PathTree} sub-tree. This is in
+ * contrast with {@link matchesPaths} which only checks to see if the given `treePaths` are included
+ * in `currentPaths`.
+ *
+ * @category Internal
+ */
+export function exactlyMatchesPaths<
+    const TreePaths extends Readonly<Pick<GenericTreePaths, 'fullPaths' | 'PathsType'>>,
+>(
+    currentPaths: ReadonlyArray<string>,
+    treePaths: Readonly<TreePaths>,
+): currentPaths is Readonly<TreePaths['PathsType']> {
+    return check.deepEquals(currentPaths, treePaths.fullPaths);
+}
+
+/**
+ * Options for {@link routeHasPaths}.
+ *
+ * @category Internal
+ */
+export type RouteHasPathsOptions = PartialWithUndefined<{
+    /**
+     * If true, requires exact equality instead of just checking if the tree paths are a prefix of
+     * the current route paths.
+     *
+     * @default false
+     */
+    exactMatch: boolean;
+}>;
+
+/**
  * Checks if the given route matches the given {@link PathTree} sub-tree and type guards the route.
  *
  * @category Main
@@ -33,6 +66,11 @@ export function routeHasPaths<
 >(
     currentRoute: Readonly<Route>,
     treePaths: Readonly<TreePaths>,
+    options?: Readonly<RouteHasPathsOptions>,
 ): currentRoute is Readonly<SpaRouteByPath<TreePaths['PathsType'], Route>> {
-    return matchesPaths(currentRoute.paths, treePaths);
+    if (options?.exactMatch) {
+        return exactlyMatchesPaths(currentRoute.paths, treePaths);
+    } else {
+        return matchesPaths(currentRoute.paths, treePaths);
+    }
 }
