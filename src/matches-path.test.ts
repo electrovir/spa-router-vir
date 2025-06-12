@@ -170,6 +170,69 @@ describe(routeHasPaths.name, () => {
         }
     });
 
+    it('can exactly match paths', () => {
+        assert.isTrue(
+            routeHasPaths(
+                {
+                    paths: [
+                        'app',
+                        'patients',
+                        'some-id',
+                    ] satisfies (typeof mockTree.paths.children.app.children.patients.children)[':patient-id']['PathsType'],
+                },
+                mockTree.paths.children.app.children.patients.children[':patient-id'],
+                {
+                    exactMatch: true,
+                },
+            ),
+        );
+        assert.isTrue(
+            routeHasPaths(
+                {
+                    paths: [
+                        'app',
+                        'patients',
+                    ] satisfies (typeof mockTree.paths.children.app.children.patients)['PathsType'],
+                },
+                mockTree.paths.children.app.children.patients,
+                {
+                    exactMatch: true,
+                },
+            ),
+        );
+        assert.isFalse(
+            routeHasPaths(
+                {
+                    paths: [
+                        'app',
+                        'patients',
+                        'some-id',
+                    ] satisfies (typeof mockTree.paths.children.app.children.patients.children)[':patient-id']['PathsType'],
+                },
+                mockTree.paths.children.app.children.patients,
+                {
+                    exactMatch: true,
+                },
+            ),
+        );
+        assert.isFalse(
+            routeHasPaths(
+                {
+                    paths: [
+                        'app',
+                        'patients',
+                        'some-id',
+                        'intake',
+                    ] satisfies (typeof mockTree.paths.children.app.children.patients.children)[':patient-id']['children']['intake']['PathsType'],
+                },
+                mockTree.paths.children.app.children.patients.children[':patient-id'],
+                {
+                    exactMatch: true,
+                },
+            ),
+        );
+    });
+
     itCases(routeHasPaths, [
         {
             it: 'matches path params',

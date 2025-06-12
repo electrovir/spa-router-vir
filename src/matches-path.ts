@@ -1,4 +1,3 @@
-import {check} from '@augment-vir/assert';
 import {type PartialWithUndefined} from '@augment-vir/common';
 import {type GenericTreePaths, type PathTree} from './path-tree.js';
 import {type FullSpaRoute, type SpaRouteByPath} from './spa-route.js';
@@ -37,7 +36,9 @@ export function exactlyMatchesPaths<
     currentPaths: ReadonlyArray<string>,
     treePaths: Readonly<TreePaths>,
 ): currentPaths is Readonly<TreePaths['PathsType']> {
-    return check.deepEquals(currentPaths, treePaths.fullPaths);
+    return (
+        treePaths.fullPaths.length === currentPaths.length && matchesPaths(currentPaths, treePaths)
+    );
 }
 
 /**
