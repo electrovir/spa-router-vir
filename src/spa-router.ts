@@ -1,7 +1,7 @@
 import {check} from '@augment-vir/assert';
 import {addPrefix} from '@augment-vir/common';
 import {assertValidShape} from 'object-shape-tester';
-import {type ExcludeNoUpdate, Observable, type ObservableListener} from 'observavir';
+import {Observable, type ObservableListener} from 'observavir';
 import {listenTo} from 'typed-event-target';
 import {SearchParamStrategy, buildUrl, joinUrlPaths, parseUrl} from 'url-vir';
 import {SanitizationDepthMaxed} from './errors/sanitization-depth-maxed.error.js';
@@ -227,9 +227,7 @@ export class SpaRouter<
      */
     public listen(
         fireImmediately: boolean,
-        listener: ObservableListener<
-            ExcludeNoUpdate<FullSpaRoute<ValidPaths, ValidSearch, ValidHash>>
-        >,
+        listener: ObservableListener<FullSpaRoute<ValidPaths, ValidSearch, ValidHash>>,
     ) {
         const maxListenerCount =
             this.params.maxListenerCount == undefined ? 1 : this.params.maxListenerCount;
@@ -251,9 +249,7 @@ export class SpaRouter<
      *   it was never added in the first place).
      */
     public removeListener(
-        listener: ObservableListener<
-            ExcludeNoUpdate<FullSpaRoute<ValidPaths, ValidSearch, ValidHash>>
-        >,
+        listener: ObservableListener<FullSpaRoute<ValidPaths, ValidSearch, ValidHash>>,
     ) {
         return this.innerObservable.removeListener(listener);
     }
