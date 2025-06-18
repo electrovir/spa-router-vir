@@ -75,6 +75,17 @@ describe(matchesPaths.name, () => {
             expect: true,
         },
         {
+            it: 'does not match a path param to a missing path',
+            inputs: [
+                [
+                    'app',
+                    'patients',
+                ] satisfies (typeof mockTree.paths.children.app.children.patients)['PathsType'],
+                mockTree.paths.children.app.children.patients.children[':patient-id'],
+            ],
+            expect: false,
+        },
+        {
             it: 'matches a longer path',
             inputs: [
                 [

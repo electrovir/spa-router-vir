@@ -16,7 +16,7 @@ export function matchesPaths<
     return treePaths.fullPaths.every((path, index) => {
         /** Allow any path when there's a path param. */
         if (path.startsWith(':')) {
-            return true;
+            return !!currentPaths[index];
         } else {
             return currentPaths[index] === path;
         }
