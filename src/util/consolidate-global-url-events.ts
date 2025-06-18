@@ -8,7 +8,6 @@ import {GlobalUrlEventsConsolidationError} from '../errors/consolidation.error.j
 export const globalLocationChangeEventName = 'locationchange';
 
 declare global {
-    // eslint-disable-next-line no-var
     var SPA_ROUTER_VIR_HISTORY_EVENTS_CONSOLIDATED_ALREADY: boolean;
 }
 
