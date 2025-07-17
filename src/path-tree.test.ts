@@ -1,5 +1,6 @@
 import {assert, check} from '@augment-vir/assert';
 import {describe, it, itCases} from '@augment-vir/test';
+import {type EmptyObject} from 'type-fest';
 import {PathTree, sanitizeTreePaths} from './index.js';
 import {type GenericTreePaths, type RemovePathsTypes} from './path-tree.js';
 import {type FullSpaRoute, type SpaRouteByPath} from './spa-route.js';
@@ -13,6 +14,11 @@ const mockPathTree = new PathTree({
                 uploads: {
                     allowBare: false,
                     children: {
+                        patients: {
+                            disable: true,
+                            children: {},
+                            allowBare: true,
+                        },
                         files: {
                             allowBare: true,
                             children: {
@@ -24,10 +30,18 @@ const mockPathTree = new PathTree({
                                 },
                             },
                         },
-                        patients: {},
                     },
                 },
-                settings: {},
+                settings: {
+                    allowBare: true,
+                    children: {
+                        disabled: {
+                            allowBare: true,
+                            disable: true,
+                            children: {},
+                        },
+                    },
+                },
             },
         },
         withAny: {
@@ -47,6 +61,7 @@ describe(PathTree.name, () => {
                 | ['withAny', ...string[]]
                 | ['app']
                 | ['app', 'settings']
+                | ['app', 'settings', 'disabled']
                 | ['app', 'uploads', 'patients']
                 | ['app', 'uploads', 'files']
                 | ['app', 'uploads', 'files', string]
@@ -59,6 +74,7 @@ describe(PathTree.name, () => {
                     PathsType: Readonly<
                         | ['app']
                         | ['app', 'settings']
+                        | ['app', 'settings', 'disabled']
                         | ['app', 'uploads', 'patients']
                         | ['app', 'uploads', 'files']
                         | ['app', 'uploads', 'files', string]
@@ -68,7 +84,17 @@ describe(PathTree.name, () => {
                         settings: Readonly<{
                             path: 'settings';
                             fullPaths: Readonly<['app', 'settings']>;
-                            PathsType: Readonly<['app', 'settings']>;
+                            PathsType: Readonly<
+                                ['app', 'settings'] | ['app', 'settings', 'disabled']
+                            >;
+                            children: Readonly<{
+                                disabled: Readonly<{
+                                    path: 'disabled';
+                                    fullPaths: Readonly<['app', 'settings', 'disabled']>;
+                                    PathsType: Readonly<['app', 'settings', 'disabled']>;
+                                    children: EmptyObject;
+                                }>;
+                            }>;
                         }>;
                         uploads: Readonly<{
                             path: 'uploads';
@@ -151,6 +177,7 @@ describe(PathTree.name, () => {
                                     path: 'patients';
                                     fullPaths: Readonly<['app', 'uploads', 'patients']>;
                                     PathsType: Readonly<['app', 'uploads', 'patients']>;
+                                    children: EmptyObject;
                                 }>;
                             }>;
                         }>;
@@ -183,6 +210,17 @@ describe(PathTree.name, () => {
                                 'app',
                                 'settings',
                             ],
+                            children: {
+                                disabled: {
+                                    path: 'disabled',
+                                    fullPaths: [
+                                        'app',
+                                        'settings',
+                                        'disabled',
+                                    ],
+                                    children: {},
+                                },
+                            },
                         },
                         uploads: {
                             path: 'uploads',
@@ -252,6 +290,7 @@ describe(PathTree.name, () => {
                                         'uploads',
                                         'patients',
                                     ],
+                                    children: {},
                                 },
                             },
                         },
@@ -452,6 +491,7 @@ describe(PathTree.name, () => {
                     | ['app', 'uploads', 'files', string]
                     | ['app', 'uploads', 'files', string, 'view']
                     | ['app', 'settings']
+                    | ['app', 'settings', 'disabled']
                     | ['withAny', ...string[]]
                     | ['legal']
                 >
@@ -513,6 +553,25 @@ describe(PathTree.name, () => {
                 'child 8',
                 'child 9',
                 'child 10',
+            ],
+            expect: undefined,
+        },
+        {
+            it: 'truncates a disabled path',
+            input: [
+                'app',
+                'settings',
+                'disabled',
+            ],
+            expect: [
+                'app',
+                'settings',
+            ],
+        },
+        {
+            it: 'handles no config',
+            input: [
+                'legal',
             ],
             expect: undefined,
         },

@@ -2,6 +2,7 @@ import {assert, check} from '@augment-vir/assert';
 import {
     deepCopy,
     filterObject,
+    getObjectTypedEntries,
     mapObjectValues,
     type AnyObject,
     type RemoveLastTupleEntry,
@@ -18,6 +19,8 @@ export type BasePathTree =
     | {
           /** Set true to allow this path as a bare path (without any children). */
           allowBare: boolean;
+          /** Set to true to disable this route in sanitization. */
+          disable?: boolean | undefined;
           children: {
               [Path in string]:
                   | BasePathTree
@@ -31,6 +34,8 @@ export type BasePathTree =
       }
     | {
           allowBare?: never;
+          /** Set to true to disable this route in sanitization. */
+          disable?: boolean | undefined;
           /** Set this to `true` to allow any nested paths (string[]). */
           anyChildren: true;
           children?: never;
@@ -370,7 +375,7 @@ export function sanitizeTreePaths(
         if (check.isLengthAtLeast(rawPaths, 1)) {
             const matchedChild = tree.children[rawPaths[0]];
 
-            if (matchedChild) {
+            if (matchedChild && !('disable' in matchedChild && matchedChild.disable)) {
                 return [
                     rawPaths[0],
                     ...sanitizeTreePaths(rawPaths.slice(1), matchedChild),
@@ -393,7 +398,12 @@ export function sanitizeTreePaths(
             return [];
         } else {
             /** If bare paths are not allowed but we got one. */
-            const firstChild = Object.keys(tree.children).find((key) => !key.startsWith(':'));
+            const firstChild = getObjectTypedEntries(tree.children).find(
+                ([
+                    key,
+                    child,
+                ]) => !key.startsWith(':') && !('disable' in child && child.disable),
+            )?.[0];
 
             if (!firstChild) {
                 throw new Error('Got blocked bare path but no children exist.');
