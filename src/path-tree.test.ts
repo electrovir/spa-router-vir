@@ -16,7 +16,6 @@ const mockPathTree = new PathTree({
                     children: {
                         patients: {
                             disable: true,
-                            children: {},
                             allowBare: true,
                         },
                         files: {
@@ -133,6 +132,7 @@ describe(PathTree.name, () => {
                                                     PathsType: Readonly<
                                                         ['app', 'uploads', 'files', string, 'view']
                                                     >;
+                                                    children: EmptyObject;
                                                 }>;
                                             }>;
                                             fill<PathParam extends string = string>(
@@ -167,6 +167,7 @@ describe(PathTree.name, () => {
                                                                 'view',
                                                             ]
                                                         >;
+                                                        children: EmptyObject;
                                                     }>;
                                                 }>;
                                             }>;
@@ -187,11 +188,13 @@ describe(PathTree.name, () => {
                     path: 'legal';
                     fullPaths: Readonly<['legal']>;
                     PathsType: Readonly<['legal']>;
+                    children: EmptyObject;
                 }>;
                 withAny: Readonly<{
                     path: 'withAny';
                     fullPaths: Readonly<['withAny']>;
                     PathsType: Readonly<['withAny', ...string[]]>;
+                    children: EmptyObject;
                 }>;
             }>;
         }>;
@@ -204,24 +207,6 @@ describe(PathTree.name, () => {
                     path: 'app',
                     fullPaths: ['app'],
                     children: {
-                        settings: {
-                            path: 'settings',
-                            fullPaths: [
-                                'app',
-                                'settings',
-                            ],
-                            children: {
-                                disabled: {
-                                    path: 'disabled',
-                                    fullPaths: [
-                                        'app',
-                                        'settings',
-                                        'disabled',
-                                    ],
-                                    children: {},
-                                },
-                            },
-                        },
                         uploads: {
                             path: 'uploads',
                             fullPaths: [
@@ -229,6 +214,15 @@ describe(PathTree.name, () => {
                                 'uploads',
                             ],
                             children: {
+                                patients: {
+                                    path: 'patients',
+                                    fullPaths: [
+                                        'app',
+                                        'uploads',
+                                        'patients',
+                                    ],
+                                    children: {},
+                                },
                                 files: {
                                     path: 'files',
                                     fullPaths: [
@@ -247,6 +241,7 @@ describe(PathTree.name, () => {
                                             ],
                                             children: {
                                                 view: {
+                                                    path: 'view',
                                                     fullPaths: [
                                                         'app',
                                                         'uploads',
@@ -254,7 +249,7 @@ describe(PathTree.name, () => {
                                                         ':file-path',
                                                         'view',
                                                     ],
-                                                    path: 'view',
+                                                    children: {},
                                                 },
                                             },
                                             fill<PathParam>(pathParam: PathParam) {
@@ -276,6 +271,7 @@ describe(PathTree.name, () => {
                                                                 'view',
                                                             ],
                                                             path: 'view',
+                                                            children: {},
                                                         },
                                                     },
                                                 };
@@ -283,12 +279,21 @@ describe(PathTree.name, () => {
                                         },
                                     },
                                 },
-                                patients: {
-                                    path: 'patients',
+                            },
+                        },
+                        settings: {
+                            path: 'settings',
+                            fullPaths: [
+                                'app',
+                                'settings',
+                            ],
+                            children: {
+                                disabled: {
+                                    path: 'disabled',
                                     fullPaths: [
                                         'app',
-                                        'uploads',
-                                        'patients',
+                                        'settings',
+                                        'disabled',
                                     ],
                                     children: {},
                                 },
@@ -301,12 +306,14 @@ describe(PathTree.name, () => {
                     fullPaths: [
                         'withAny',
                     ],
+                    children: {},
                 },
                 legal: {
                     path: 'legal',
                     fullPaths: [
                         'legal',
                     ],
+                    children: {},
                 },
             },
         };
@@ -457,24 +464,43 @@ describe(PathTree.name, () => {
                             anyChildren: true,
                             allowBare: true,
                         },
-                        // @ts-expect-error: `children` cannot be used with `anyChildren: true`
-                        app2: {
-                            anyChildren: true,
-                            children: {},
-                        },
-                        // @ts-expect-error: `anyChildren` cannot be used with `children`
-                        app3: {
-                            children: {},
-                            anyChildren: true,
-                        },
-                        app4: {
-                            allowBare: true,
-                        },
-                        app5: {},
                     },
                 }),
             {
-                matchMessage: 'expected children',
+                matchMessage: 'cannot define both allowBare and anyChildren',
+            },
+        );
+        assert.throws(
+            () =>
+                new PathTree({
+                    allowBare: false,
+                    children: {
+                        // @ts-expect-error: `children` cannot be used with `anyChildren: true`
+                        app2: {
+                            anyChildren: true,
+                            children: {
+                                invalid: {},
+                            },
+                        },
+                    },
+                }),
+            {
+                matchMessage: 'cannot define anyChildren and definite children',
+            },
+        );
+        assert.throws(
+            () =>
+                new PathTree({
+                    allowBare: false,
+                    children: {
+                        app2: {
+                            allowBare: false,
+                            children: {},
+                        },
+                    },
+                }),
+            {
+                matchMessage: 'allowBare is false but there are no definite children',
             },
         );
     });
@@ -620,6 +646,84 @@ describe(sanitizeTreePaths.name, () => {
                     },
                 },
             }),
+        );
+    });
+    it('redirects paths', () => {
+        assert.deepEquals(
+            sanitizeTreePaths(
+                [
+                    'b',
+                    'hello',
+                ],
+                {
+                    allowBare: true,
+                    children: {
+                        a: {
+                            allowBare: true,
+                            children: {},
+                        },
+                        b: {
+                            allowBare: true,
+                            redirectTo: 'a',
+                            children: {
+                                hello: {},
+                            },
+                        },
+                    },
+                },
+            ),
+            ['a'],
+        );
+        assert.deepEquals(
+            sanitizeTreePaths(
+                [
+                    'b',
+                    'hello',
+                ],
+                {
+                    allowBare: true,
+                    children: {
+                        a: {
+                            allowBare: true,
+                            children: undefined,
+                        },
+                        b: {
+                            allowBare: true,
+                            redirectTo: 'a',
+                            children: {
+                                hello: {},
+                            },
+                        },
+                    },
+                },
+            ),
+            ['a'],
+        );
+    });
+    it('fails on invalid redirect path', () => {
+        assert.throws(() =>
+            sanitizeTreePaths(
+                [
+                    'b',
+                    'hello',
+                ],
+                {
+                    allowBare: true,
+                    children: {
+                        a: {
+                            allowBare: true,
+                            children: {},
+                        },
+                        b: {
+                            allowBare: true,
+                            redirectTo: 'q',
+                            children: {
+                                hello: {},
+                            },
+                        },
+                    },
+                },
+            ),
         );
     });
 });

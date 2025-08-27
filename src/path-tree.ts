@@ -1,7 +1,6 @@
-import {assert, check} from '@augment-vir/assert';
+import {check} from '@augment-vir/assert';
 import {
     deepCopy,
-    filterObject,
     getObjectTypedEntries,
     mapObjectValues,
     type AnyObject,
@@ -11,16 +10,32 @@ import {
 import {type EmptyObject, type IsEqual} from 'type-fest';
 
 /**
+ * Shared options for {@link BasePathTree}.
+ *
+ * @category Internal
+ */
+export type SharedPathTreeOptions = {
+    /** Set to true to disable this route in sanitization. */
+    disable?: boolean | undefined;
+    /**
+     * If set, sanitization will always set this path part to the value provided. All other path
+     * parts (ancestors and children) will not be changed. This should be the name of a sibling tree
+     * path.
+     *
+     * Note that at the top level of a path tree, this does nothing.
+     */
+    redirectTo?: string | undefined;
+};
+
+/**
  * Base type for the constructor parameter tree in {@link PathTree}.
  *
  * @category Internal
  */
 export type BasePathTree =
-    | {
+    | ({
           /** Set true to allow this path as a bare path (without any children). */
           allowBare: boolean;
-          /** Set to true to disable this route in sanitization. */
-          disable?: boolean | undefined;
           children?:
               | {
                     [Path in string]:
@@ -33,15 +48,13 @@ export type BasePathTree =
                 }
               | undefined;
           anyChildren?: never;
-      }
-    | {
+      } & SharedPathTreeOptions)
+    | ({
           allowBare?: never;
-          /** Set to true to disable this route in sanitization. */
-          disable?: boolean | undefined;
           /** Set this to `true` to allow any nested paths (string[]). */
           anyChildren: true;
           children?: never;
-      };
+      } & SharedPathTreeOptions);
 
 /**
  * Converts a {@link PathTree} tree to a union of possible path arrays.
@@ -71,23 +84,27 @@ export type NestedTreePaths<NestedTree extends BasePathTree> =
         : Readonly<[]>;
 
 function checkTree(tree: Readonly<BasePathTree>, pathChain: string[]): void {
-    if (
+    const childrenEntries = Object.entries(tree.children || {});
+    const parentString = pathChain.length ? ` at ${pathChain.join(' -> ')}.` : '.';
+
+    if (tree.allowBare && (tree as BasePathTree).anyChildren) {
+        throw new Error(
+            `Invalid tree: cannot define both allowBare and anyChildren${parentString}`,
+        );
+    } else if (tree.anyChildren && childrenEntries.length) {
+        throw new Error(
+            `Invalid tree: cannot define anyChildren and definite children${parentString}`,
+        );
+    } else if (
         !tree.allowBare &&
         !tree.anyChildren &&
-        !Object.keys(tree.children || {}).some((key) => !key.startsWith(':'))
+        !childrenEntries.some(([key]) => !key.startsWith(':'))
     ) {
-        const parentString = pathChain.length ? ` on ${pathChain.join(' -> ')}.` : '.';
         throw new Error(
             `Invalid tree: allowBare is false but there are no definite children${parentString}`,
         );
-    }
-
-    if (!tree.anyChildren) {
-        assert.isObject(
-            tree.children,
-            `expected children under ${pathChain.length ? pathChain[pathChain.length - 1] : 'top level'}`,
-        );
-        Object.entries(tree.children).forEach(
+    } else if (!tree.anyChildren) {
+        childrenEntries.forEach(
             ([
                 path,
                 childTree,
@@ -167,25 +184,37 @@ export type RuntimeTreePaths<
             path: CurrentPath;
             fullPaths: Readonly<CurrentPaths>;
             PathsType: Readonly<ValidPaths<OriginalTree, CurrentPaths>>;
+            children: EmptyObject;
         }>
       : Tree extends {anyChildren: true}
         ? Readonly<{
               path: CurrentPath;
               fullPaths: Readonly<CurrentPaths>;
               PathsType: Readonly<ValidPaths<OriginalTree, CurrentPaths>>;
+              children: EmptyObject;
           }>
         : Readonly<{
               path: CurrentPath;
               fullPaths: Readonly<CurrentPaths>;
               PathsType: Readonly<ValidPaths<OriginalTree, CurrentPaths>>;
-              children: Readonly<{
-                  [ChildPath in keyof Exclude<Tree, EmptyObject>['children']]: RuntimeTreePaths<
-                      Extract<Exclude<Tree, EmptyObject>['children'], AnyObject>[ChildPath],
-                      OriginalTree,
-                      [...CurrentPaths, ChildPath],
-                      ChildPath
-                  >;
-              }>;
+              children: 'children' extends keyof Tree
+                  ? Tree['children'] extends object
+                      ? Readonly<{
+                            [ChildPath in keyof Exclude<
+                                Tree,
+                                EmptyObject
+                            >['children']]: RuntimeTreePaths<
+                                Extract<
+                                    Exclude<Tree, EmptyObject>['children'],
+                                    AnyObject
+                                >[ChildPath],
+                                OriginalTree,
+                                [...CurrentPaths, ChildPath],
+                                ChildPath
+                            >;
+                        }>
+                      : EmptyObject
+                  : EmptyObject;
           }>;
 
 /**
@@ -200,7 +229,7 @@ export type GenericTreePaths = Readonly<{
     path: string;
     fullPaths: ReadonlyArray<string>;
     PathsType: ReadonlyArray<string>;
-    children?: Readonly<Record<string, GenericTreePaths>>;
+    children?: Readonly<Record<string, GenericTreePaths>> | undefined;
 }>;
 
 /**
@@ -245,27 +274,23 @@ function generatePathTreePaths<const Tree extends BasePathTree | EmptyObject>(
     tree: Readonly<Tree>,
     parentPaths: string[],
 ): RuntimeTreePaths<Tree> {
-    const children: BasePathTree['children'] | undefined = check.hasKey(tree, 'children')
-        ? (tree.children as BasePathTree['children'])
-        : undefined;
+    const children: BasePathTree['children'] = (tree as AnyObject as BasePathTree).children;
     const currentPath = parentPaths[parentPaths.length - 1] || '';
 
     const generatedTree = Object.defineProperty(
-        filterObject(
-            {
-                path: currentPath,
-                fullPaths: parentPaths,
-                children: children
+        {
+            path: currentPath,
+            fullPaths: parentPaths,
+            children:
+                children && Object.keys(children).length
                     ? mapObjectValues(children, (childPath, childTree) => {
                           return generatePathTreePaths<BasePathTree | EmptyObject>(childTree, [
                               ...parentPaths,
                               childPath,
                           ]);
                       })
-                    : undefined,
-            },
-            (key, value) => check.isDefined(value),
-        ),
+                    : {},
+        },
         'PathsType',
         {
             enumerable: false,
@@ -377,24 +402,35 @@ export function sanitizeTreePaths(
         const children = tree.children || {};
 
         if (check.isLengthAtLeast(rawPaths, 1)) {
-            const matchedChild = children[rawPaths[0]];
+            const currentPathPart = rawPaths[0];
+
+            const matchedChild =
+                children[currentPathPart] ||
+                Object.entries(children).find(([key]) => key.startsWith(':'))?.[1];
 
             if (matchedChild && !('disable' in matchedChild && matchedChild.disable)) {
+                if ('redirectTo' in matchedChild && matchedChild.redirectTo) {
+                    const redirectedSibling = children[matchedChild.redirectTo];
+
+                    if (!redirectedSibling) {
+                        throw new Error(
+                            `Invalid redirect from '${currentPathPart}' to '${matchedChild.redirectTo}'.`,
+                        );
+                    }
+
+                    return sanitizeTreePaths(
+                        [
+                            matchedChild.redirectTo,
+                            ...rawPaths.slice(1),
+                        ],
+                        tree,
+                    );
+                }
+
                 return [
-                    rawPaths[0],
+                    currentPathPart,
                     ...sanitizeTreePaths(rawPaths.slice(1), matchedChild),
                 ];
-            } else {
-                const pathParamMatch = Object.entries(children).find(([key]) =>
-                    key.startsWith(':'),
-                );
-
-                if (pathParamMatch) {
-                    return [
-                        rawPaths[0],
-                        ...sanitizeTreePaths(rawPaths.slice(1), pathParamMatch[1]),
-                    ];
-                }
             }
         }
 
