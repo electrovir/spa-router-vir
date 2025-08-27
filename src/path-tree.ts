@@ -21,15 +21,17 @@ export type BasePathTree =
           allowBare: boolean;
           /** Set to true to disable this route in sanitization. */
           disable?: boolean | undefined;
-          children: {
-              [Path in string]:
-                  | BasePathTree
-                  /**
-                   * If a child path is an empty object, that means that it has no children and
-                   * `allowBare` is set to `true`.
-                   */
-                  | EmptyObject;
-          };
+          children?:
+              | {
+                    [Path in string]:
+                        | BasePathTree
+                        /**
+                         * If a child path is an empty object, that means that it has no children
+                         * and `allowBare` is set to `true`.
+                         */
+                        | EmptyObject;
+                }
+              | undefined;
           anyChildren?: never;
       }
     | {
@@ -72,7 +74,7 @@ function checkTree(tree: Readonly<BasePathTree>, pathChain: string[]): void {
     if (
         !tree.allowBare &&
         !tree.anyChildren &&
-        !Object.keys(tree.children).some((key) => !key.startsWith(':'))
+        !Object.keys(tree.children || {}).some((key) => !key.startsWith(':'))
     ) {
         const parentString = pathChain.length ? ` on ${pathChain.join(' -> ')}.` : '.';
         throw new Error(
@@ -372,8 +374,10 @@ export function sanitizeTreePaths(
     if ('anyChildren' in tree && tree.anyChildren) {
         return rawPaths;
     } else if ('allowBare' in tree) {
+        const children = tree.children || {};
+
         if (check.isLengthAtLeast(rawPaths, 1)) {
-            const matchedChild = tree.children[rawPaths[0]];
+            const matchedChild = children[rawPaths[0]];
 
             if (matchedChild && !('disable' in matchedChild && matchedChild.disable)) {
                 return [
@@ -381,7 +385,7 @@ export function sanitizeTreePaths(
                     ...sanitizeTreePaths(rawPaths.slice(1), matchedChild),
                 ];
             } else {
-                const pathParamMatch = Object.entries(tree.children).find(([key]) =>
+                const pathParamMatch = Object.entries(children).find(([key]) =>
                     key.startsWith(':'),
                 );
 
@@ -398,7 +402,7 @@ export function sanitizeTreePaths(
             return [];
         } else {
             /** If bare paths are not allowed but we got one. */
-            const firstChild = getObjectTypedEntries(tree.children).find(
+            const firstChild = getObjectTypedEntries(children).find(
                 ([
                     key,
                     child,

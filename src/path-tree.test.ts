@@ -452,25 +452,25 @@ describe(PathTree.name, () => {
                 new PathTree({
                     allowBare: false,
                     children: {
+                        // @ts-expect-error: `allowBare` cannot be used with `anyChildren: true`
                         app: {
                             anyChildren: true,
-                            // @ts-expect-error: `allowBare` cannot be used with `anyChildren: true`
                             allowBare: true,
                         },
+                        // @ts-expect-error: `children` cannot be used with `anyChildren: true`
                         app2: {
                             anyChildren: true,
-                            // @ts-expect-error: `children` cannot be used with `anyChildren: true`
                             children: {},
                         },
+                        // @ts-expect-error: `anyChildren` cannot be used with `children`
                         app3: {
                             children: {},
-                            // @ts-expect-error: `anyChildren` cannot be used with `children`
                             anyChildren: true,
                         },
-                        // @ts-expect-error: missing `children`
                         app4: {
                             allowBare: true,
                         },
+                        app5: {},
                     },
                 }),
             {
