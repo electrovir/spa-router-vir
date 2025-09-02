@@ -1,5 +1,5 @@
 import {type Overwrite} from '@augment-vir/common';
-import {defineShape, or} from 'object-shape-tester';
+import {defineShape, optionalShape} from 'object-shape-tester';
 import {
     type FullSpaRoute,
     type ValidHashBase,
@@ -40,7 +40,7 @@ export const spaRouterParamsShape = defineShape({
      *
      * @default `''`
      */
-    basePath: or('', undefined),
+    basePath: optionalShape('', {alsoUndefined: true}),
     /**
      * Use this to rewrite a route before it makes it to your application. This is necessary to
      * ensure that the types for your route is maintained.
@@ -53,14 +53,14 @@ export const spaRouterParamsShape = defineShape({
      *
      * @default 1
      */
-    maxListenerCount: or(1, undefined),
+    maxListenerCount: optionalShape(1, {alsoUndefined: true}),
     /** Set to `true` to turn off warning logs. */
-    disableWarnings: or(undefined, false),
+    disableWarnings: optionalShape(false, {alsoUndefined: true}),
     /**
      * Set this to `true` to disable the router without destroying it. Use this if you have multiple
      * routers to ensure you only have one running at a time.
      */
-    isPaused: or(false, undefined),
+    isPaused: optionalShape(false, {alsoUndefined: true}),
 });
 
 /**

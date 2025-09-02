@@ -1,4 +1,10 @@
-import {defineShape, indexedKeys, isValidShape, optional, or} from 'object-shape-tester';
+import {
+    checkValidShape,
+    defineShape,
+    optionalShape,
+    recordShape,
+    unionShape,
+} from 'object-shape-tester';
 
 /**
  * Base for all valid paths type parameters.
@@ -51,17 +57,16 @@ export type SpaRoute<
 
 const spaRouteShape = defineShape({
     paths: [''],
-    search: optional(
-        or(
+    search: optionalShape(
+        unionShape(
             undefined,
-            indexedKeys({
+            recordShape({
                 keys: '',
                 values: [''],
-                required: false,
             }),
         ),
     ),
-    hash: optional(or(undefined, '')),
+    hash: optionalShape(unionShape(undefined, '')),
 });
 
 /**
@@ -71,7 +76,7 @@ const spaRouteShape = defineShape({
  * @category Internal
  */
 export function isSpaRoute(input: unknown): input is SpaRoute {
-    return isValidShape(input, spaRouteShape);
+    return checkValidShape(input, spaRouteShape);
 }
 
 /**

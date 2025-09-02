@@ -83,6 +83,6 @@ describe('RouteSanitizer', () => {
             ],
             search: undefined,
         };
-        assert.strictEquals(spaRouterParamsShape.defaultValue.sanitizeRoute(route), route);
+        assert.strictEquals(spaRouterParamsShape.default.sanitizeRoute(route), route);
     });
 });
