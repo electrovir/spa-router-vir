@@ -3,52 +3,9 @@ import {describe, it, itCases} from '@augment-vir/test';
 import {type EmptyObject} from 'type-fest';
 import {PathTree, sanitizeTreePaths} from './index.js';
 import {type GenericTreePaths, type RemovePathsTypes} from './path-tree.js';
+import {mockPathTree} from './path-tree.mock.js';
 import {type FullSpaRoute, type SpaRouteByPath} from './spa-route.js';
 
-const mockPathTree = new PathTree({
-    allowBare: true,
-    children: {
-        app: {
-            allowBare: true,
-            children: {
-                uploads: {
-                    allowBare: false,
-                    children: {
-                        patients: {
-                            disable: true,
-                            allowBare: true,
-                        },
-                        files: {
-                            allowBare: true,
-                            children: {
-                                ':file-path': {
-                                    allowBare: true,
-                                    children: {
-                                        view: {},
-                                    },
-                                },
-                            },
-                        },
-                    },
-                },
-                settings: {
-                    allowBare: true,
-                    children: {
-                        disabled: {
-                            allowBare: true,
-                            disable: true,
-                            children: {},
-                        },
-                    },
-                },
-            },
-        },
-        withAny: {
-            anyChildren: true,
-        },
-        legal: {},
-    },
-});
 describe(PathTree.name, () => {
     it('generates a paths object', () => {
         type ExpectedType = Readonly<{

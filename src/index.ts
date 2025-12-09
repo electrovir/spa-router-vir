@@ -1,6 +1,7 @@
 export * from './errors/consolidation.error.js';
 export * from './errors/sanitization-depth-maxed.error.js';
 export * from './errors/spa-router.error.js';
+export * from './extract-path-tree.js';
 export * from './matches-path.js';
 export * from './path-tree.js';
 export * from './spa-route.js';
