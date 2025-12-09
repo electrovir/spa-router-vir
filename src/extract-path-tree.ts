@@ -6,9 +6,9 @@ import {type GenericTreePaths, type PathTree} from './path-tree.js';
  *
  * @category Main
  */
-export function extractPathTree<const Tree extends GenericTreePaths>(
-    currentPaths: string[],
-    root: PathTree<any>,
+export function extractPathTree<const Tree extends Readonly<GenericTreePaths>>(
+    currentPaths: ReadonlyArray<string>,
+    root: PathTree<any> | Readonly<PathTree<any>>,
     /** The specific subtree of the root tree that you want to match. */
     subTree: Tree,
 ): Tree | undefined {
