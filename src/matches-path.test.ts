@@ -55,7 +55,14 @@ describe(matchesPaths.name, () => {
             type ExpectedPath =
                 (typeof mockTree.paths.children.app.children.patients.children)[':patient-id']['children']['intake']['PathsType'];
 
-            assert.tsType(paths).equals<Readonly<[...ExpectedPath, ...string[]]>>();
+            assert.tsType(paths).equals<
+                Readonly<
+                    [
+                        ...ExpectedPath,
+                        ...string[],
+                    ]
+                >
+            >();
         }
     });
 
@@ -257,7 +264,14 @@ describe(routeHasPaths.name, () => {
                 exactMatch: true,
             })
         ) {
-            assert.tsType(route.paths).equals<Readonly<['app', 'patients']>>();
+            assert.tsType(route.paths).equals<
+                Readonly<
+                    [
+                        'app',
+                        'patients',
+                    ]
+                >
+            >();
         }
     });
     it('type guards a non-exact match', () => {

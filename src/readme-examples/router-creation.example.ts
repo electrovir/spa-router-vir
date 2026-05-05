@@ -33,9 +33,15 @@ export const myRouter = new SpaRouter<
  */
 export type ValidRouterPaths =
     | ['home']
-    | ['gallery', /** Specific gallery id. */ string]
+    | [
+          'gallery',
+          /** Specific gallery id. */ string,
+      ]
     | ['about']
-    | ['about', 'team' | 'website'];
+    | [
+          'about',
+          'team' | 'website',
+      ];
 
 /** A helper function that specifically sanitizes the `paths` part of the route. */
 export function sanitizePaths(rawRoute: Readonly<Pick<FullSpaRoute, 'paths'>>): ValidRouterPaths {

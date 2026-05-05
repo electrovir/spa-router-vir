@@ -65,8 +65,12 @@ describe(SpaRouter.name, () => {
                 router.createRouteUrl({
                     paths: ['path1'],
                 }).url,
-                {search: {}},
-                {searchParamStrategy: SearchParamStrategy.Clear},
+                {
+                    search: {},
+                },
+                {
+                    searchParamStrategy: SearchParamStrategy.Clear,
+                },
             ).pathname,
             '/something/path1',
         );
@@ -212,60 +216,81 @@ describe(SpaRouter.name, () => {
 
     it(
         'does not set a route if paused',
-        testRouter({isPaused: true}, (mockRouter, hrefBefore) => {
-            const newRoute = {
-                paths: [
-                    'about',
-                    'team',
-                ],
-            } as const satisfies Partial<SpaRoute<MockValidPaths>>;
-            const newUrl = mockRouter.createRouteUrl(newRoute);
+        testRouter(
+            {
+                isPaused: true,
+            },
+            (mockRouter, hrefBefore) => {
+                const newRoute = {
+                    paths: [
+                        'about',
+                        'team',
+                    ],
+                } as const satisfies Partial<SpaRoute<MockValidPaths>>;
+                const newUrl = mockRouter.createRouteUrl(newRoute);
 
-            assert.isFalse(mockRouter.setRoute(newRoute));
+                assert.isFalse(mockRouter.setRoute(newRoute));
 
-            assert.strictEquals(globalThis.location.href, hrefBefore);
-            assert.notStrictEquals(globalThis.location.href, newUrl);
+                assert.strictEquals(globalThis.location.href, hrefBefore);
+                assert.notStrictEquals(globalThis.location.href, newUrl);
 
-            globalThis.history.replaceState(undefined, '', '/test');
-            assert.strictEquals(
-                globalThis.location.pathname,
-                '/test',
-                'path should not have gotten sanitized',
-            );
-        }),
+                globalThis.history.replaceState(undefined, '', '/test');
+                assert.strictEquals(
+                    globalThis.location.pathname,
+                    '/test',
+                    'path should not have gotten sanitized',
+                );
+            },
+        ),
     );
 
     it(
         'removes a listener',
-        testRouter({isPaused: true}, (mockRouter) => {
-            assert.strictEquals(mockRouter.getListenerCount(), 0);
-            const removeListener = mockRouter.listen(true, () => {});
-            assert.strictEquals(mockRouter.getListenerCount(), 1);
-            removeListener();
-            assert.strictEquals(mockRouter.getListenerCount(), 0);
-        }),
+        testRouter(
+            {
+                isPaused: true,
+            },
+            (mockRouter) => {
+                assert.strictEquals(mockRouter.getListenerCount(), 0);
+                const removeListener = mockRouter.listen(true, () => {});
+                assert.strictEquals(mockRouter.getListenerCount(), 1);
+                removeListener();
+                assert.strictEquals(mockRouter.getListenerCount(), 0);
+            },
+        ),
     );
 
     it(
         'blocks multiple listeners by default',
-        testRouter({isPaused: true}, (mockRouter) => {
-            assert.throws(() => {
-                mockRouter.listen(true, () => {});
-                mockRouter.listen(true, () => {});
-            });
-        }),
+        testRouter(
+            {
+                isPaused: true,
+            },
+            (mockRouter) => {
+                assert.throws(() => {
+                    mockRouter.listen(true, () => {});
+                    mockRouter.listen(true, () => {});
+                });
+            },
+        ),
     );
 
     it(
         'allows a customized listener max',
-        testRouter({isPaused: true, maxListenerCount: 3}, (mockRouter) => {
-            mockRouter.listen(true, () => {});
-            mockRouter.listen(true, () => {});
-            mockRouter.listen(true, () => {});
-            assert.throws(() => {
+        testRouter(
+            {
+                isPaused: true,
+                maxListenerCount: 3,
+            },
+            (mockRouter) => {
                 mockRouter.listen(true, () => {});
-            });
-        }),
+                mockRouter.listen(true, () => {});
+                mockRouter.listen(true, () => {});
+                assert.throws(() => {
+                    mockRouter.listen(true, () => {});
+                });
+            },
+        ),
     );
 
     it(
@@ -399,5 +424,68 @@ describe(SpaRouter.name, () => {
             assert.notStrictEquals(parseUrl(globalThis.location.href).fullPath, '/about/website');
             assert.strictEquals(globalThis.location.href, hrefBefore);
         }),
+    );
+
+    it('blocks setRoute when isRouteAllowed returns false', () => {
+        globalThis.history.replaceState(undefined, '', '/home');
+        const router = new SpaRouter<MockValidPaths>({
+            sanitizeRoute(rawRoute) {
+                return {
+                    paths: sanitizeMockPaths(rawRoute),
+                    search: undefined,
+                    hash: undefined,
+                };
+            },
+            isRouteAllowed: () => false,
+        });
+
+        try {
+            const hrefBefore = globalThis.location.href;
+            assert.isFalse(
+                router.setRoute({
+                    paths: [
+                        'about',
+                        'team',
+                    ],
+                }),
+            );
+            assert.strictEquals(globalThis.location.href, hrefBefore);
+        } finally {
+            router.destroy();
+        }
+    });
+
+    it(
+        'allows setRoute when isRouteAllowed returns true and receives the sanitized route',
+        testRouter(
+            {
+                isRouteAllowed(newRoute) {
+                    assert.deepEquals(newRoute, {
+                        hash: undefined,
+                        paths: [
+                            'gallery',
+                            'allowed-id',
+                        ],
+                        search: undefined,
+                    });
+                    return true;
+                },
+            },
+            (mockRouter) => {
+                assert.isTrue(
+                    mockRouter.setRoute({
+                        paths: [
+                            'gallery',
+                            'allowed-id',
+                        ],
+                    }),
+                );
+
+                assert.strictEquals(
+                    parseUrl(globalThis.location.href).fullPath,
+                    '/gallery/allowed-id',
+                );
+            },
+        ),
     );
 });

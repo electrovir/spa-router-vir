@@ -16,14 +16,22 @@ export function parseUrlIntoRawRoute(
     const pathToSplit = removePrefix({
         value: removePrefix({
             value: urlParts.pathname,
-            prefix: addPrefix({value: basePath || '', prefix: '/'}),
+            prefix: addPrefix({
+                value: basePath || '',
+                prefix: '/',
+            }),
         }),
         prefix: '/',
     });
     const paths = pathToSplit ? pathToSplit.split('/') : [];
 
     const search = Object.keys(urlParts.searchParams).length ? urlParts.searchParams : undefined;
-    const hash = urlParts.hash ? removePrefix({value: urlParts.hash, prefix: '#'}) : undefined;
+    const hash = urlParts.hash
+        ? removePrefix({
+              value: urlParts.hash,
+              prefix: '#',
+          })
+        : undefined;
 
     return {
         paths,

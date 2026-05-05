@@ -112,7 +112,15 @@ export type SpaRouteByPath<
     Paths extends Readonly<OriginalFullSpaRoute['paths']>,
     OriginalFullSpaRoute extends Readonly<Pick<FullSpaRoute, 'paths'>>,
 > = OriginalFullSpaRoute & {
-    paths: Extract<OriginalFullSpaRoute['paths'], Readonly<[...Paths, ...any[]]>>;
+    paths: Extract<
+        OriginalFullSpaRoute['paths'],
+        Readonly<
+            [
+                ...Paths,
+                ...any[],
+            ]
+        >
+    >;
 };
 
 /**
@@ -125,7 +133,10 @@ export type ChildPaths<
     OriginalFullSpaRoute extends FullSpaRoute,
 > =
     SpaRouteByPath<Paths, OriginalFullSpaRoute>['paths'] extends Readonly<
-        [...Paths, ...infer ChildPaths]
+        [
+            ...Paths,
+            ...infer ChildPaths,
+        ]
     >
         ? Readonly<ChildPaths>
         : never;

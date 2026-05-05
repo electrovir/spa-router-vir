@@ -3,9 +3,11 @@ import {type MaybePromise, awaitedForEach} from '@augment-vir/common';
 import {describe, itCases, testWeb} from '@augment-vir/test';
 import {getCenterOfElement} from '@augment-vir/web';
 import {sendKeys, sendMouse} from '@web/test-runner-commands';
-import {type ClickPayload} from '@web/test-runner-commands/dist/sendMousePlugin';
+import {type SendMousePayload} from '@web/test-runner-commands/plugins';
 import {css, html, listen} from 'element-vir';
 import {shouldClickEventTriggerRouteChange} from './click-event-should-set-routes.js';
+
+type ClickPayload = Extract<SendMousePayload, {type: 'click'}>;
 
 describe(shouldClickEventTriggerRouteChange.name, () => {
     type Action =
@@ -83,7 +85,9 @@ describe(shouldClickEventTriggerRouteChange.name, () => {
                 });
 
                 cleanupCallbacks.push(async () => {
-                    await sendKeys({up: action.key});
+                    await sendKeys({
+                        up: action.key,
+                    });
                 });
             }
         });

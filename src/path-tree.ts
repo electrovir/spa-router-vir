@@ -78,7 +78,10 @@ export type NestedTreePaths<NestedTree extends BasePathTree> =
     NestedTree['children'] extends infer Children extends NonNullable<BasePathTree['children']>
         ? Values<{
               [Path in keyof Children]: Readonly<
-                  [Path extends `:${string}` ? string : Path, ...TreePaths<Children[Path]>]
+                  [
+                      Path extends `:${string}` ? string : Path,
+                      ...TreePaths<Children[Path]>,
+                  ]
               >;
           }>
         : Readonly<[]>;
@@ -133,30 +136,67 @@ export type TreeWithParams<
 > = EmptyObject extends Tree
     ? Readonly<{
           path: PathParam;
-          fullPaths: Readonly<[...RemoveLastTupleEntry<CurrentPaths>, PathParam]>;
+          fullPaths: Readonly<
+              [
+                  ...RemoveLastTupleEntry<CurrentPaths>,
+                  PathParam,
+              ]
+          >;
           PathsType: Readonly<
-              ValidPaths<OriginalTree, [...RemoveLastTupleEntry<CurrentPaths>, PathParam]>
+              ValidPaths<
+                  OriginalTree,
+                  [
+                      ...RemoveLastTupleEntry<CurrentPaths>,
+                      PathParam,
+                  ]
+              >
           >;
       }>
     : Tree extends {anyChildren: true}
       ? Readonly<{
             path: PathParam;
-            fullPaths: Readonly<[...RemoveLastTupleEntry<CurrentPaths>, PathParam]>;
+            fullPaths: Readonly<
+                [
+                    ...RemoveLastTupleEntry<CurrentPaths>,
+                    PathParam,
+                ]
+            >;
             PathsType: Readonly<
-                ValidPaths<OriginalTree, [...RemoveLastTupleEntry<CurrentPaths>, PathParam]>
+                ValidPaths<
+                    OriginalTree,
+                    [
+                        ...RemoveLastTupleEntry<CurrentPaths>,
+                        PathParam,
+                    ]
+                >
             >;
         }>
       : Readonly<{
             path: PathParam;
-            fullPaths: Readonly<[...RemoveLastTupleEntry<CurrentPaths>, PathParam]>;
+            fullPaths: Readonly<
+                [
+                    ...RemoveLastTupleEntry<CurrentPaths>,
+                    PathParam,
+                ]
+            >;
             PathsType: Readonly<
-                ValidPaths<OriginalTree, [...RemoveLastTupleEntry<CurrentPaths>, PathParam]>
+                ValidPaths<
+                    OriginalTree,
+                    [
+                        ...RemoveLastTupleEntry<CurrentPaths>,
+                        PathParam,
+                    ]
+                >
             >;
             children: Readonly<{
                 [ChildPath in keyof Exclude<Tree, EmptyObject>['children']]: RuntimeTreePaths<
                     Extract<Exclude<Tree, EmptyObject>['children'], AnyObject>[ChildPath],
                     OriginalTree,
-                    [...RemoveLastTupleEntry<CurrentPaths>, PathParam, ChildPath],
+                    [
+                        ...RemoveLastTupleEntry<CurrentPaths>,
+                        PathParam,
+                        ChildPath,
+                    ],
                     ChildPath
                 >;
             }>;
@@ -209,7 +249,10 @@ export type RuntimeTreePaths<
                                     AnyObject
                                 >[ChildPath],
                                 OriginalTree,
-                                [...CurrentPaths, ChildPath],
+                                [
+                                    ...CurrentPaths,
+                                    ChildPath,
+                                ],
                                 ChildPath
                             >;
                         }>
@@ -268,7 +311,15 @@ function removePathsTypes<Paths>(paths: Paths): RemovePathsTypes<Paths> {
 export type ValidPaths<
     OriginalTree extends Readonly<BasePathTree> | EmptyObject,
     CurrentPaths extends PropertyKey[] = [],
-> = Extract<TreePaths<OriginalTree>, Readonly<[...CurrentPaths, ...string[]]>>;
+> = Extract<
+    TreePaths<OriginalTree>,
+    Readonly<
+        [
+            ...CurrentPaths,
+            ...string[],
+        ]
+    >
+>;
 
 function generatePathTreePaths<const Tree extends BasePathTree | EmptyObject>(
     tree: Readonly<Tree>,

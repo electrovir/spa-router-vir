@@ -12,7 +12,12 @@ export function matchesPaths<
 >(
     currentPaths: ReadonlyArray<string>,
     treePaths: Readonly<TreePaths>,
-): currentPaths is Readonly<[...TreePaths['PathsType'], ...string[]]> {
+): currentPaths is Readonly<
+    [
+        ...TreePaths['PathsType'],
+        ...string[],
+    ]
+> {
     return treePaths.fullPaths.every((path, index) => {
         /** Allow any path when there's a path param. */
         if (path.startsWith(':')) {

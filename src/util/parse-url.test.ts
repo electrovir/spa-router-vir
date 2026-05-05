@@ -1,3 +1,5 @@
+/* eslint-disable @virmator/prefer-parse-url */
+
 import {describe, itCases} from '@augment-vir/test';
 import {parseUrlIntoRawRoute} from './parse-url.js';
 

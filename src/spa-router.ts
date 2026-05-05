@@ -43,7 +43,9 @@ export class SpaRouter<
 
     constructor(params: Readonly<SpaRouterParams<ValidPaths, ValidSearch, ValidHash>>) {
         assertValidShape(params, spaRouterParamsShape);
-        this.params = {...params};
+        this.params = {
+            ...params,
+        };
         const sanitizedCurrentUrl = this.readCurrentRoute();
         this.innerObservable = new Observable<FullSpaRoute<ValidPaths, ValidSearch, ValidHash>>({
             defaultValue: sanitizedCurrentUrl,
@@ -72,7 +74,9 @@ export class SpaRouter<
                 this.innerObservable.setValue(sanitizedRoute);
             } else {
                 this.sanitizationDepth++;
-                this.setRoute(sanitizedRoute, {replace: true});
+                this.setRoute(sanitizedRoute, {
+                    replace: true,
+                });
                 if (!params.disableWarnings) {
                     console.warn('Route sanitized.', {
                         from: rawRoute,
@@ -83,7 +87,9 @@ export class SpaRouter<
         });
 
         /** Ensure that the initial sanitized route is indeed the current window URL. */
-        this.setRoute(sanitizedCurrentUrl, {replace: true});
+        this.setRoute(sanitizedCurrentUrl, {
+            replace: true,
+        });
     }
 
     /** Detect if the given route already includes the router's `basePath`. */
@@ -141,7 +147,10 @@ export class SpaRouter<
                 paths: newRouteWithBase.paths,
                 search: newRouteWithBase.search,
                 hash: newRouteWithBase.hash
-                    ? addPrefix({value: newRouteWithBase.hash, prefix: '#'})
+                    ? addPrefix({
+                          value: newRouteWithBase.hash,
+                          prefix: '#',
+                      })
                     : '',
             },
             {

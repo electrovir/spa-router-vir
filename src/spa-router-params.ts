@@ -77,6 +77,7 @@ export const spaRouterParamsShape = defineShape({
      * Optionally provide a function to gate whether a sanitized route is allowed to be set. When it
      * returns `false`, the route change is blocked.
      */
+    /* node:coverage ignore next: shape default function body is never invoked at runtime */
     isRouteAllowed: nullableShape((() => true) as RouteAllowedCheck),
 });
 

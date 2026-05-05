@@ -2,9 +2,15 @@ import {type SpaRoute} from './spa-route.js';
 
 export type MockValidPaths =
     | ['home']
-    | ['gallery', /** Specific gallery id. */ string]
+    | [
+          'gallery',
+          /** Specific gallery id. */ string,
+      ]
     | ['about']
-    | ['about', 'team' | 'website'];
+    | [
+          'about',
+          'team' | 'website',
+      ];
 
 export function sanitizeMockPaths(rawRoute: Readonly<Pick<SpaRoute, 'paths'>>): MockValidPaths {
     const topLevelPath = rawRoute.paths[0];

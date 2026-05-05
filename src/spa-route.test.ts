@@ -92,7 +92,9 @@ describe(isSpaRoute.name, () => {
             it: 'accepts a full FullRoute',
             input: {
                 paths: ['hi'],
-                search: {hi: ['hi']},
+                search: {
+                    hi: ['hi'],
+                },
                 hash: 'hi',
             },
             expect: true,
@@ -101,7 +103,9 @@ describe(isSpaRoute.name, () => {
             it: 'rejects search with just a string value',
             input: {
                 paths: ['hi'],
-                search: {hi: 'hi'},
+                search: {
+                    hi: 'hi',
+                },
             },
             expect: false,
         },
@@ -117,14 +121,18 @@ describe(isSpaRoute.name, () => {
             it: 'rejects numeric search',
             input: {
                 paths: ['hi'],
-                search: {hi: [32]},
+                search: {
+                    hi: [32],
+                },
             },
             expect: false,
         },
         {
             it: 'rejects missing paths',
             input: {
-                search: {hi: ['hi']},
+                search: {
+                    hi: ['hi'],
+                },
                 hash: 'hi',
             },
             expect: false,
@@ -133,7 +141,9 @@ describe(isSpaRoute.name, () => {
             it: 'rejects numeric paths',
             input: {
                 paths: [5],
-                search: {hi: ['hi']},
+                search: {
+                    hi: ['hi'],
+                },
                 hash: 'hi',
             },
             expect: false,
