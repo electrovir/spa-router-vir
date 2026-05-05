@@ -9,7 +9,7 @@ import {type FullSpaRoute} from '../spa-route.js';
  */
 export function parseUrlIntoRawRoute(
     url: string | URL,
-    basePath?: string | undefined,
+    basePath?: string | undefined | null,
 ): FullSpaRoute {
     const urlParts = parseUrl(url);
 

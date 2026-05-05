@@ -5,4 +5,4 @@ document.getElementsByTagName('a')[0]!.href = myRouter.createRouteUrl({
         'gallery',
         'gallery-id-here',
     ],
-});
+}).url;

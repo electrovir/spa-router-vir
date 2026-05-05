@@ -1,5 +1,5 @@
 import {type Overwrite} from '@augment-vir/common';
-import {defineShape, optionalShape} from 'object-shape-tester';
+import {defineShape, nullableShape} from 'object-shape-tester';
 import {
     type FullSpaRoute,
     type ValidHashBase,
@@ -22,6 +22,18 @@ export type RouteSanitizer<
 ) => Readonly<FullSpaRoute<ValidPaths, ValidSearch, ValidHash>>;
 
 /**
+ * A function that determines whether a sanitized route is allowed to be set on the window URL.
+ * Return `false` to block the route change.
+ *
+ * @category Internal
+ */
+export type RouteAllowedCheck<
+    ValidPaths extends ValidPathsBase = ValidPathsBase,
+    ValidSearch extends ValidSearchBase | undefined = undefined,
+    ValidHash extends ValidHashBase | undefined = undefined,
+> = (newRoute: Readonly<FullSpaRoute<ValidPaths, ValidSearch, ValidHash>>) => boolean;
+
+/**
  * Used to verify if an object is a valid `SpaRouterParams` instance.
  *
  * @category Internal
@@ -40,7 +52,7 @@ export const spaRouterParamsShape = defineShape({
      *
      * @default `''`
      */
-    basePath: optionalShape('', {alsoUndefined: true}),
+    basePath: nullableShape(''),
     /**
      * Use this to rewrite a route before it makes it to your application. This is necessary to
      * ensure that the types for your route is maintained.
@@ -53,14 +65,19 @@ export const spaRouterParamsShape = defineShape({
      *
      * @default 1
      */
-    maxListenerCount: optionalShape(1, {alsoUndefined: true}),
+    maxListenerCount: nullableShape(1),
     /** Set to `true` to turn off warning logs. */
-    disableWarnings: optionalShape(false, {alsoUndefined: true}),
+    disableWarnings: nullableShape(false),
     /**
      * Set this to `true` to disable the router without destroying it. Use this if you have multiple
      * routers to ensure you only have one running at a time.
      */
-    isPaused: optionalShape(false, {alsoUndefined: true}),
+    isPaused: nullableShape(false),
+    /**
+     * Optionally provide a function to gate whether a sanitized route is allowed to be set. When it
+     * returns `false`, the route change is blocked.
+     */
+    isRouteAllowed: nullableShape((() => true) as RouteAllowedCheck),
 });
 
 /**
@@ -73,20 +90,17 @@ export type SpaRouterParams<
     ValidSearch extends ValidSearchBase | undefined = undefined,
     ValidHash extends ValidHashBase | undefined = undefined,
 > = Overwrite<
-    {
-        [Prop in keyof typeof spaRouterParamsShape.runtimeType as undefined extends (typeof spaRouterParamsShape.runtimeType)[Prop]
-            ? never
-            : Prop]: (typeof spaRouterParamsShape.runtimeType)[Prop];
-    } & {
-        [Prop in keyof typeof spaRouterParamsShape.runtimeType as undefined extends (typeof spaRouterParamsShape.runtimeType)[Prop]
-            ? Prop
-            : never]?: (typeof spaRouterParamsShape.runtimeType)[Prop];
-    },
+    typeof spaRouterParamsShape.runtimeType,
     {
         /**
          * Use this to rewrite a route before it makes it to your application. This is necessary to
          * ensure that the types for your route is maintained.
          */
         sanitizeRoute: RouteSanitizer<ValidPaths, ValidSearch, ValidHash>;
+        /**
+         * Optionally provide a function to gate whether a sanitized route is allowed to be set.
+         * When it returns `false`, the route change is blocked.
+         */
+        isRouteAllowed?: RouteAllowedCheck<ValidPaths, ValidSearch, ValidHash> | undefined | null;
     }
 >;

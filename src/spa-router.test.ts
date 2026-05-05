@@ -64,7 +64,7 @@ describe(SpaRouter.name, () => {
             buildUrl(
                 router.createRouteUrl({
                     paths: ['path1'],
-                }),
+                }).url,
                 {search: {}},
                 {searchParamStrategy: SearchParamStrategy.Clear},
             ).pathname,
@@ -119,13 +119,13 @@ describe(SpaRouter.name, () => {
                     // @ts-expect-error: this is not a valid path
                     'invalid path',
                 ],
-            });
+            }).url;
             const validUrl = mockRouter.createRouteUrl({
                 paths: [
                     'gallery',
                     'some id',
                 ],
-            });
+            }).url;
 
             assert.notStrictEquals(
                 sanitizedInvalidUrl,
@@ -150,7 +150,7 @@ describe(SpaRouter.name, () => {
                         'gallery',
                         'some id',
                     ],
-                });
+                }).url;
 
                 assert.strictEquals(parseUrl(validUrl).fullPath, '/some-base/gallery/some id');
             },
@@ -165,7 +165,7 @@ describe(SpaRouter.name, () => {
                     'gallery',
                     'some id',
                 ],
-            });
+            }).url;
 
             assert.strictEquals(parseUrl(validUrl).fullPath, '/gallery/some id');
         }),
@@ -194,7 +194,7 @@ describe(SpaRouter.name, () => {
                 );
                 const validUrl = mockRouter.createRouteUrl({
                     hash: '#hello-there',
-                });
+                }).url;
 
                 assert.strictEquals(parseUrl(validUrl).fullPath, '/about/team#hello-there');
                 assert.strictEquals(parseUrl(globalThis.location.href).fullPath, '/about/team#hi');

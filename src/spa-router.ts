@@ -111,7 +111,7 @@ export class SpaRouter<
     /** Create a full URL href string from the given route (combined with the current route). */
     public createRouteUrl(
         newRoute: Readonly<Partial<SpaRoute<ValidPaths, ValidSearch, ValidHash>>>,
-    ): string {
+    ) {
         const fullNewRoute: FullSpaRoute = {
             ...parseUrlIntoRawRoute(globalThis.location.href, this.params.basePath),
             ...newRoute,
@@ -149,7 +149,10 @@ export class SpaRouter<
             },
         );
 
-        return urlParts.href;
+        return {
+            url: urlParts.href,
+            route: sanitizedNewRoute,
+        };
     }
 
     /**
@@ -178,7 +181,7 @@ export class SpaRouter<
             force?: boolean | undefined;
         }> = {},
     ): boolean {
-        const newUrl: string = this.createRouteUrl(newRoute);
+        const {route: cleanNewRoute, url: newUrl} = this.createRouteUrl(newRoute);
         const {fullPath} = parseUrl(newUrl);
 
         if (this.params.isPaused) {
@@ -187,6 +190,8 @@ export class SpaRouter<
             !options.force &&
             check.jsonEquals(parseUrl(globalThis.location.href).fullPath, fullPath)
         ) {
+            return false;
+        } else if (this.params.isRouteAllowed && !this.params.isRouteAllowed(cleanNewRoute)) {
             return false;
         } else if (options.replace) {
             globalThis.history.replaceState(undefined, '', fullPath);
