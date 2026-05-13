@@ -895,6 +895,258 @@ describe(sanitizeTreePaths.name, () => {
             ['a'],
         );
     });
+    it('redirects an exact path alias without descendants', () => {
+        const tree = {
+            allowBare: true,
+            children: {
+                current: {
+                    allowBare: true,
+                    redirectFrom: [
+                        'legacy',
+                        '/old',
+                    ],
+                    children: {
+                        child: {},
+                    },
+                },
+            },
+        } as const;
+
+        assert.deepEquals(sanitizeTreePaths(['legacy'], tree), ['current']);
+        assert.deepEquals(sanitizeTreePaths(['old'], tree), ['current']);
+    });
+    it('does not match an exact path alias when more segments are present', () => {
+        const tree = {
+            allowBare: true,
+            children: {
+                current: {
+                    allowBare: true,
+                    redirectFrom: ['legacy'],
+                    children: {
+                        child: {},
+                    },
+                },
+            },
+        } as const;
+
+        assert.deepEquals(
+            sanitizeTreePaths(
+                [
+                    'legacy',
+                    'child',
+                ],
+                tree,
+            ),
+            [],
+        );
+    });
+    it('redirects a wildcard path alias and forwards descendants', () => {
+        const tree = {
+            allowBare: true,
+            children: {
+                current: {
+                    allowBare: true,
+                    redirectFrom: ['legacy/*'],
+                    children: {
+                        child: {},
+                    },
+                },
+            },
+        } as const;
+
+        assert.deepEquals(
+            sanitizeTreePaths(
+                [
+                    'legacy',
+                    'child',
+                ],
+                tree,
+            ),
+            [
+                'current',
+                'child',
+            ],
+        );
+        assert.deepEquals(sanitizeTreePaths(['legacy'], tree), []);
+    });
+    it('routes an exact and a wildcard alias to different siblings', () => {
+        const tree = {
+            allowBare: true,
+            children: {
+                exactTarget: {
+                    allowBare: true,
+                    redirectFrom: ['legacy'],
+                    children: {},
+                },
+                wildcardTarget: {
+                    allowBare: true,
+                    redirectFrom: ['legacy/*'],
+                    children: {
+                        child: {},
+                    },
+                },
+            },
+        } as const;
+
+        assert.deepEquals(sanitizeTreePaths(['legacy'], tree), ['exactTarget']);
+        assert.deepEquals(
+            sanitizeTreePaths(
+                [
+                    'legacy',
+                    'child',
+                ],
+                tree,
+            ),
+            [
+                'wildcardTarget',
+                'child',
+            ],
+        );
+    });
+    it('prefers a direct match over redirectFrom', () => {
+        assert.deepEquals(
+            sanitizeTreePaths(['legacy'], {
+                allowBare: true,
+                children: {
+                    legacy: {
+                        allowBare: true,
+                        children: {},
+                    },
+                    current: {
+                        allowBare: true,
+                        redirectFrom: ['legacy'],
+                        children: {},
+                    },
+                },
+            }),
+            ['legacy'],
+        );
+    });
+    it('redirects from aliases on a nested child', () => {
+        const tree = {
+            allowBare: true,
+            children: {
+                app: {
+                    allowBare: true,
+                    children: {
+                        current: {
+                            allowBare: true,
+                            redirectFrom: [
+                                'legacy',
+                                'old/*',
+                            ],
+                            children: {
+                                child: {},
+                            },
+                        },
+                    },
+                },
+            },
+        } as const;
+
+        assert.deepEquals(
+            sanitizeTreePaths(
+                [
+                    'app',
+                    'legacy',
+                ],
+                tree,
+            ),
+            [
+                'app',
+                'current',
+            ],
+        );
+        assert.deepEquals(
+            sanitizeTreePaths(
+                [
+                    'app',
+                    'old',
+                    'child',
+                ],
+                tree,
+            ),
+            [
+                'app',
+                'current',
+                'child',
+            ],
+        );
+        assert.deepEquals(
+            sanitizeTreePaths(
+                [
+                    'app',
+                    'legacy',
+                    'child',
+                ],
+                tree,
+            ),
+            ['app'],
+        );
+        assert.deepEquals(
+            sanitizeTreePaths(
+                [
+                    'app',
+                    'old',
+                ],
+                tree,
+            ),
+            ['app'],
+        );
+    });
+    it('routes nested exact and wildcard aliases to different siblings', () => {
+        const tree = {
+            allowBare: true,
+            children: {
+                app: {
+                    allowBare: true,
+                    children: {
+                        exactTarget: {
+                            allowBare: true,
+                            redirectFrom: ['legacy'],
+                            children: {},
+                        },
+                        wildcardTarget: {
+                            allowBare: true,
+                            redirectFrom: ['legacy/*'],
+                            children: {
+                                child: {},
+                            },
+                        },
+                    },
+                },
+            },
+        } as const;
+
+        assert.deepEquals(
+            sanitizeTreePaths(
+                [
+                    'app',
+                    'legacy',
+                ],
+                tree,
+            ),
+            [
+                'app',
+                'exactTarget',
+            ],
+        );
+        assert.deepEquals(
+            sanitizeTreePaths(
+                [
+                    'app',
+                    'legacy',
+                    'child',
+                ],
+                tree,
+            ),
+            [
+                'app',
+                'wildcardTarget',
+                'child',
+            ],
+        );
+    });
     it('fails on invalid redirect path', () => {
         assert.throws(() =>
             sanitizeTreePaths(

@@ -25,6 +25,20 @@ export type SharedPathTreeOptions = {
      * Note that at the top level of a path tree, this does nothing.
      */
     redirectTo?: string | undefined;
+    /**
+     * If set, sanitization will accept any of these path parts as an alias for this path. Each
+     * entry is a single segment (an optional leading slash is allowed) that may be suffixed with
+     * `/*` to also redirect descendants. The matched path part is rewritten to this node's own path
+     * name.
+     *
+     * - `'old'` matches only the exact path `/old` (no descendants).
+     * - `'old/*'` matches `/old/<anything>` and forwards the remaining segments unchanged. It does
+     *   not match the bare `/old`.
+     *
+     * Both forms can be combined (e.g. `redirectFrom: ['old', 'old/*']`) to redirect both the bare
+     * path and all descendants.
+     */
+    redirectFrom?: ReadonlyArray<string> | undefined;
 };
 
 /**
@@ -437,6 +451,57 @@ export class PathTree<const Tree extends Readonly<BasePathTree>> {
     }
 }
 
+function redirectFromEntryMatches(
+    entry: string,
+    pathPart: string,
+    hasMoreSegments: boolean,
+): boolean {
+    const hasWildcard = entry.endsWith('/*');
+    const rawBase = hasWildcard ? entry.slice(0, -2) : entry;
+    const base = rawBase.startsWith('/') ? rawBase.slice(1) : rawBase;
+
+    if (base !== pathPart) {
+        return false;
+    }
+
+    return hasWildcard ? hasMoreSegments : !hasMoreSegments;
+}
+
+function findMatchingChildEntry(
+    children: Readonly<Record<string, BasePathTree | EmptyObject>>,
+    pathPart: string,
+    hasMoreSegments: boolean,
+):
+    | readonly [
+          string,
+          BasePathTree | EmptyObject,
+      ]
+    | undefined {
+    const directMatch = children[pathPart];
+    if (directMatch) {
+        return [
+            pathPart,
+            directMatch,
+        ];
+    }
+
+    const redirectFromEntry = Object.entries(children).find(
+        ([
+            ,
+            child,
+        ]) =>
+            'redirectFrom' in child &&
+            child.redirectFrom?.some((entry) =>
+                redirectFromEntryMatches(entry, pathPart, hasMoreSegments),
+            ),
+    );
+    if (redirectFromEntry) {
+        return redirectFromEntry;
+    }
+
+    return Object.entries(children).find(([key]) => key.startsWith(':'));
+}
+
 /**
  * Sanitize a set of paths based on a given tree. This is used internally by {@link PathTree}.
  *
@@ -455,11 +520,18 @@ export function sanitizeTreePaths(
         if (check.isLengthAtLeast(rawPaths, 1)) {
             const currentPathPart = rawPaths[0];
 
-            const matchedChild =
-                children[currentPathPart] ||
-                Object.entries(children).find(([key]) => key.startsWith(':'))?.[1];
+            const matchedEntry = findMatchingChildEntry(
+                children,
+                currentPathPart,
+                rawPaths.length > 1,
+            );
 
-            if (matchedChild && !('disable' in matchedChild && matchedChild.disable)) {
+            if (matchedEntry && !('disable' in matchedEntry[1] && matchedEntry[1].disable)) {
+                const [
+                    matchedKey,
+                    matchedChild,
+                ] = matchedEntry;
+
                 if ('redirectTo' in matchedChild && matchedChild.redirectTo) {
                     const redirectedSibling = children[matchedChild.redirectTo];
 
@@ -478,8 +550,12 @@ export function sanitizeTreePaths(
                     );
                 }
 
+                const isPathParam = matchedKey.startsWith(':');
+                const outputPathPart =
+                    !isPathParam && matchedKey !== currentPathPart ? matchedKey : currentPathPart;
+
                 return [
-                    currentPathPart,
+                    outputPathPart,
                     ...sanitizeTreePaths(rawPaths.slice(1), matchedChild),
                 ];
             }
