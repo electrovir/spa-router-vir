@@ -11,6 +11,19 @@ const baseConfig = defineConfig({
 /** @type {import('@web/test-runner').TestRunnerConfig} */
 const webTestRunnerConfig = {
     ...baseConfig,
+    coverageConfig: {
+        ...baseConfig.coverageConfig,
+        exclude: [
+            ...baseConfig.coverageConfig.exclude,
+            /**
+             * The demo element imports `vira`, which has a circular import through `theme-vir` ->
+             * `element-book` -> `vira` that throws a `viraTheme` TDZ error when loaded outside of a
+             * bundler. Nothing here is tested, so keep it out of the generated
+             * all-files-for-code-coverage test.
+             */
+            '**/vir-demo.element.mock.ts',
+        ],
+    },
 };
 
 export default webTestRunnerConfig;
