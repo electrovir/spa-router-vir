@@ -243,8 +243,7 @@ export class SpaRouter<
         fireImmediately: boolean,
         listener: ObservableListener<FullSpaRoute<ValidPaths, ValidSearch, ValidHash>>,
     ) {
-        const maxListenerCount =
-            this.params.maxListenerCount == undefined ? 1 : this.params.maxListenerCount;
+        const maxListenerCount = this.params.maxListenerCount ?? 1;
 
         if (maxListenerCount && this.innerObservable.getListenerCount() >= maxListenerCount) {
             throw new SpaRouterError(

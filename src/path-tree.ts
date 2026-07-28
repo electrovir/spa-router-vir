@@ -4,10 +4,11 @@ import {
     getObjectTypedEntries,
     mapObjectValues,
     type AnyObject,
+    type EmptyObject,
+    type IsEqual,
     type RemoveLastTupleEntry,
     type Values,
 } from '@augment-vir/common';
-import {type EmptyObject, type IsEqual} from 'type-fest';
 
 /**
  * Shared options for {@link BasePathTree}.
@@ -451,11 +452,15 @@ export class PathTree<const Tree extends Readonly<BasePathTree>> {
     }
 }
 
-function redirectFromEntryMatches(
-    entry: string,
-    pathPart: string,
-    hasMoreSegments: boolean,
-): boolean {
+function redirectFromEntryMatches({
+    entry,
+    pathPart,
+    hasMoreSegments,
+}: Readonly<{
+    entry: string;
+    pathPart: string;
+    hasMoreSegments: boolean;
+}>): boolean {
     const hasWildcard = entry.endsWith('/*');
     const rawBase = hasWildcard ? entry.slice(0, -2) : entry;
     const base = rawBase.startsWith('/') ? rawBase.slice(1) : rawBase;
@@ -492,7 +497,11 @@ function findMatchingChildEntry(
         ]) =>
             'redirectFrom' in child &&
             child.redirectFrom?.some((entry) =>
-                redirectFromEntryMatches(entry, pathPart, hasMoreSegments),
+                redirectFromEntryMatches({
+                    entry,
+                    pathPart,
+                    hasMoreSegments,
+                }),
             ),
     );
     if (redirectFromEntry) {

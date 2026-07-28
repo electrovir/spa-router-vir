@@ -1,6 +1,6 @@
 import {assert, check} from '@augment-vir/assert';
+import {type EmptyObject} from '@augment-vir/common';
 import {describe, it, itCases} from '@augment-vir/test';
-import {type EmptyObject} from 'type-fest';
 import {PathTree, sanitizeTreePaths} from './index.js';
 import {type GenericTreePaths, type RemovePathsTypes} from './path-tree.js';
 import {mockPathTree} from './path-tree.mock.js';
@@ -1177,7 +1177,11 @@ describe(sanitizeTreePaths.name, () => {
 
 describe('GenericTreePaths', () => {
     it('is compatible with concrete values', () => {
-        const testAssignment: GenericTreePaths = mockPathTree.paths.children.app.children.settings;
-        const testAssignment2: GenericTreePaths = mockPathTree.paths.children.app.children.uploads;
+        assert
+            .tsType<typeof mockPathTree.paths.children.app.children.settings>()
+            .matches<GenericTreePaths>();
+        assert
+            .tsType<typeof mockPathTree.paths.children.app.children.uploads>()
+            .matches<GenericTreePaths>();
     });
 });

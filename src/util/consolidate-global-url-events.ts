@@ -55,11 +55,11 @@ export function consolidateGlobalUrlEvents() {
         /* node:coverage disable */
     } else if (globalHistory.pushState === newPushState) {
         throw new GlobalUrlEventsConsolidationError(
-            `The consolidation module thinks that window events have not been consolidated yet but globalHistory.pushState has already been overridden. Does this module have two copies in your repo?`,
+            'The consolidation module thinks that window events have not been consolidated yet but globalHistory.pushState has already been overridden. Does this module have two copies in your repo?',
         );
     } else if (globalHistory.replaceState === newReplaceState) {
         throw new GlobalUrlEventsConsolidationError(
-            `The consolidation module thinks that window events have not been consolidated yet but globalHistory.replaceState has already been overridden. Does this module have two copies in your repo?`,
+            'The consolidation module thinks that window events have not been consolidated yet but globalHistory.replaceState has already been overridden. Does this module have two copies in your repo?',
         );
     }
     /* node:coverage enable */

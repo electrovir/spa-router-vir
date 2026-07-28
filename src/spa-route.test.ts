@@ -46,7 +46,7 @@ describe('ValidSearchBase', () => {
 
 describe('ValidHashBase', () => {
     it('matches more specific sub types', () => {
-        assert.tsType<`hello=there`>().matches<ValidHashBase>();
+        assert.tsType<'hello=there'>().matches<ValidHashBase>();
     });
 
     it('only allows strings', () => {
