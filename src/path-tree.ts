@@ -6,9 +6,7 @@ import {
     type AnyObject,
     type EmptyObject,
     type IsEqual,
-    type ReadonlyDeep,
     type RemoveLastTupleEntry,
-    type Simplify,
     type Values,
 } from '@augment-vir/common';
 
@@ -276,42 +274,17 @@ export type MappedPathTreeChildren<LeafValue, Children extends object> = Readonl
 }>;
 
 /**
- * Type helper for {@link mapPathTree} to extract the inferred LeafValue from the given
- * {@link MappedPathTree}.
- *
- * @category Internal
- */
-export type ExtractMappedPathTreeLeafValue<MappedTree> = Simplify<
-    Readonly<
-        | (MappedTree extends Readonly<{
-              root: infer Root;
-          }>
-              ? Root
-              : never)
-        | (MappedTree extends Readonly<{
-              children: infer Children extends object;
-          }>
-              ? Values<{
-                    [Path in keyof Children]: ExtractMappedPathTreeLeafValue<Children[Path]>;
-                }>
-              : never)
-    >
->;
-
-/**
  * Creates a {@link MappedPathTree} value for the given path tree.
  *
  * @category Main
  */
-export function mapPathTree<
-    const Tree extends Readonly<BasePathTree | EmptyObject>,
-    MappedTree extends MappedPathTree<unknown, Tree>,
->(
-    tree: Tree,
-    mappedTree: ReadonlyDeep<MappedTree> &
-        MappedPathTree<ExtractMappedPathTreeLeafValue<MappedTree>, Tree>,
-): ReadonlyDeep<MappedTree> {
-    return mappedTree;
+export function mapPathTree<LeafValue>() {
+    return <const Tree extends Readonly<BasePathTree | EmptyObject>>(
+        tree: Tree,
+        mappedTree: MappedPathTree<LeafValue, Tree>,
+    ) => {
+        return mappedTree;
+    };
 }
 
 /**

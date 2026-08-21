@@ -1283,7 +1283,7 @@ describe(mapPathTree.name, () => {
     it('has proper types', () => {
         assert
             .tsType(
-                mapPathTree(mockPathTree.tree.children.app.children.uploads, {
+                mapPathTree<LeafValue>()(mockPathTree.tree.children.app.children.uploads, {
                     children: {
                         files: {
                             root: {
@@ -1318,7 +1318,7 @@ describe(mapPathTree.name, () => {
 
         assert
             .tsType(
-                mapPathTree(
+                mapPathTree<LeafValue>()(
                     mockPathTree.tree.children.app.children.uploads,
                     {} as MappedPathTree<
                         LeafValue,
@@ -1361,7 +1361,7 @@ describe(mapPathTree.name, () => {
         } as const;
 
         assert.strictEquals(
-            mapPathTree(mockPathTree.tree.children.app.children.uploads, value),
+            mapPathTree<LeafValue>()(mockPathTree.tree.children.app.children.uploads, value),
             value,
         );
     });
