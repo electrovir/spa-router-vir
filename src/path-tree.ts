@@ -6,7 +6,9 @@ import {
     type AnyObject,
     type EmptyObject,
     type IsEqual,
+    type ReadonlyDeep,
     type RemoveLastTupleEntry,
+    type Simplify,
     type Values,
 } from '@augment-vir/common';
 
@@ -216,6 +218,101 @@ export type TreeWithParams<
                 >;
             }>;
         }>;
+
+/**
+ * Converts a path tree into a nested object type.
+ *
+ * The `root` property represents the current path when it is valid as a bare path. The `children`
+ * property contains entries for each known child path.
+ *
+ * @category Internal
+ */
+export type MappedPathTree<
+    LeafValue,
+    Tree extends Readonly<BasePathTree | EmptyObject>,
+> = EmptyObject extends Tree
+    ? Readonly<{
+          root: LeafValue;
+      }>
+    : Tree extends Readonly<{
+            children: infer Children extends object;
+        }>
+      ? keyof Children extends never
+          ? Tree extends Readonly<{
+                allowBare: true;
+            }>
+              ? Readonly<{
+                    root: LeafValue;
+                }>
+              : EmptyObject
+          : Tree extends Readonly<{
+                  allowBare: true;
+              }>
+            ? Readonly<{
+                  root: LeafValue;
+                  children: MappedPathTreeChildren<LeafValue, Children>;
+              }>
+            : Readonly<{
+                  children: MappedPathTreeChildren<LeafValue, Children>;
+              }>
+      : Tree extends Readonly<{
+              allowBare: true;
+          }>
+        ? Readonly<{
+              root: LeafValue;
+          }>
+        : EmptyObject;
+
+/**
+ * Helper for {@link MappedPathTree}.
+ *
+ * @category Internal
+ */
+export type MappedPathTreeChildren<LeafValue, Children extends object> = Readonly<{
+    [Path in keyof Children]: MappedPathTree<
+        LeafValue,
+        Extract<Children[Path], Readonly<BasePathTree | EmptyObject>>
+    >;
+}>;
+
+/**
+ * Type helper for {@link mapPathTree} to extract the inferred LeafValue from the given
+ * {@link MappedPathTree}.
+ *
+ * @category Internal
+ */
+export type ExtractMappedPathTreeLeafValue<MappedTree> = Simplify<
+    Readonly<
+        | (MappedTree extends Readonly<{
+              root: infer Root;
+          }>
+              ? Root
+              : never)
+        | (MappedTree extends Readonly<{
+              children: infer Children extends object;
+          }>
+              ? Values<{
+                    [Path in keyof Children]: ExtractMappedPathTreeLeafValue<Children[Path]>;
+                }>
+              : never)
+    >
+>;
+
+/**
+ * Creates a {@link MappedPathTree} value for the given path tree.
+ *
+ * @category Main
+ */
+export function mapPathTree<
+    const Tree extends Readonly<BasePathTree | EmptyObject>,
+    MappedTree extends MappedPathTree<unknown, Tree>,
+>(
+    tree: Tree,
+    mappedTree: ReadonlyDeep<MappedTree> &
+        MappedPathTree<ExtractMappedPathTreeLeafValue<MappedTree>, Tree>,
+): ReadonlyDeep<MappedTree> {
+    return mappedTree;
+}
 
 /**
  * Generates the types for {@link PathTree.paths}.
@@ -494,15 +591,18 @@ function findMatchingChildEntry(
         ([
             ,
             child,
-        ]) =>
-            'redirectFrom' in child &&
-            child.redirectFrom?.some((entry) =>
-                redirectFromEntryMatches({
-                    entry,
-                    pathPart,
-                    hasMoreSegments,
-                }),
-            ),
+        ]) => {
+            return (
+                'redirectFrom' in child &&
+                child.redirectFrom?.some((entry) => {
+                    return redirectFromEntryMatches({
+                        entry,
+                        pathPart,
+                        hasMoreSegments,
+                    });
+                })
+            );
+        },
     );
     if (redirectFromEntry) {
         return redirectFromEntry;

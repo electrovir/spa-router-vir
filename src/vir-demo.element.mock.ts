@@ -345,13 +345,13 @@ export const VirDemo = defineElement()({
                     <code>${formatPath(state.currentRoute.paths)}</code>
                 </p>
             </${ViraCard}>
-            ${demoSections.map(
-                (section) => html`
+            ${demoSections.map((section) => {
+                return html`
                     <${ViraCard}>
                         <h2>${section.title}</h2>
                         <p>${section.description}</p>
-                        ${section.links.map(
-                            (link) => html`
+                        ${section.links.map((link) => {
+                            return html`
                                 <${ViraLink.assign({
                                     route: {
                                         route: {
@@ -364,11 +364,11 @@ export const VirDemo = defineElement()({
                                 })}>
                                     ${link.label}
                                 </${ViraLink}>
-                            `,
-                        )}
+                            `;
+                        })}
                     </${ViraCard}>
-                `,
-            )}
+                `;
+            })}
         `;
     },
 });

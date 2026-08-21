@@ -2,9 +2,18 @@ import {assert, check} from '@augment-vir/assert';
 import {type EmptyObject} from '@augment-vir/common';
 import {describe, it, itCases} from '@augment-vir/test';
 import {PathTree, sanitizeTreePaths} from './index.js';
-import {type GenericTreePaths, type RemovePathsTypes} from './path-tree.js';
+import {
+    mapPathTree,
+    type GenericTreePaths,
+    type MappedPathTree,
+    type RemovePathsTypes,
+} from './path-tree.js';
 import {mockPathTree} from './path-tree.mock.js';
 import {type FullSpaRoute, type SpaRouteByPath} from './spa-route.js';
+
+type LeafValue = Readonly<{
+    label: string;
+}>;
 
 describe(PathTree.name, () => {
     it('generates a paths object', () => {
@@ -557,6 +566,89 @@ describe(PathTree.name, () => {
 
         tree.paths.children.design.fullPaths;
     });
+    it('creates mapped path tree types', () => {
+        type ExpectedType = Readonly<{
+            root: LeafValue;
+            children: Readonly<{
+                app: Readonly<{
+                    root: LeafValue;
+                    children: Readonly<{
+                        uploads: Readonly<{
+                            children: Readonly<{
+                                patients: Readonly<{
+                                    root: LeafValue;
+                                }>;
+                                files: Readonly<{
+                                    root: LeafValue;
+                                    children: Readonly<{
+                                        ':file-path': Readonly<{
+                                            root: LeafValue;
+                                            children: Readonly<{
+                                                view: Readonly<{
+                                                    root: LeafValue;
+                                                }>;
+                                            }>;
+                                        }>;
+                                    }>;
+                                }>;
+                            }>;
+                        }>;
+                        settings: Readonly<{
+                            root: LeafValue;
+                            children: Readonly<{
+                                disabled: Readonly<{
+                                    root: LeafValue;
+                                }>;
+                            }>;
+                        }>;
+                    }>;
+                }>;
+                withAny: EmptyObject;
+                legal: Readonly<{
+                    root: LeafValue;
+                }>;
+            }>;
+        }>;
+
+        const exampleInstance: MappedPathTree<
+            LeafValue,
+            typeof mockPathTree.tree.children.app.children.uploads
+        > = {
+            children: {
+                files: {
+                    root: {
+                        label: '',
+                    },
+                    children: {
+                        ':file-path': {
+                            root: {
+                                label: '',
+                            },
+                            children: {
+                                view: {
+                                    root: {
+                                        label: '',
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                patients: {
+                    root: {
+                        label: '',
+                    },
+                },
+            },
+        };
+
+        assert.tsType<MappedPathTree<LeafValue, typeof mockPathTree.tree>>().equals<ExpectedType>();
+        assert
+            .tsType<
+                MappedPathTree<LeafValue, typeof mockPathTree.tree.children.app.children.uploads>
+            >()
+            .equals<ExpectedType['children']['app']['children']['uploads']>();
+    });
     it('works with SpaRouteByPath', () => {
         const fakePath: SpaRouteByPath<
             typeof mockPathTree.paths.children.app.fullPaths,
@@ -600,31 +692,29 @@ describe(PathTree.name, () => {
     });
 
     it('rejects an invalid tree', () => {
-        assert.throws(
-            () =>
-                new PathTree({
-                    allowBare: false,
-                    children: {},
-                }),
-        );
-        assert.throws(
-            () =>
-                new PathTree({
-                    allowBare: true,
-                    children: {
-                        a: {
-                            allowBare: false,
-                            children: {},
-                        },
+        assert.throws(() => {
+            return new PathTree({
+                allowBare: false,
+                children: {},
+            });
+        });
+        assert.throws(() => {
+            return new PathTree({
+                allowBare: true,
+                children: {
+                    a: {
+                        allowBare: false,
+                        children: {},
                     },
-                }),
-        );
+                },
+            });
+        });
     });
 
     it('requires correct types', () => {
         assert.throws(
-            () =>
-                new PathTree({
+            () => {
+                return new PathTree({
                     allowBare: false,
                     children: {
                         // @ts-expect-error: `allowBare` cannot be used with `anyChildren: true`
@@ -633,14 +723,15 @@ describe(PathTree.name, () => {
                             allowBare: true,
                         },
                     },
-                }),
+                });
+            },
             {
                 matchMessage: 'cannot define both allowBare and anyChildren',
             },
         );
         assert.throws(
-            () =>
-                new PathTree({
+            () => {
+                return new PathTree({
                     allowBare: false,
                     children: {
                         // @ts-expect-error: `children` cannot be used with `anyChildren: true`
@@ -651,14 +742,15 @@ describe(PathTree.name, () => {
                             },
                         },
                     },
-                }),
+                });
+            },
             {
                 matchMessage: 'cannot define anyChildren and definite children',
             },
         );
         assert.throws(
-            () =>
-                new PathTree({
+            () => {
+                return new PathTree({
                     allowBare: false,
                     children: {
                         app2: {
@@ -666,7 +758,8 @@ describe(PathTree.name, () => {
                             children: {},
                         },
                     },
-                }),
+                });
+            },
             {
                 matchMessage: 'allowBare is false but there are no definite children',
             },
@@ -831,8 +924,8 @@ describe(PathTree.name, () => {
 
 describe(sanitizeTreePaths.name, () => {
     it('rejects missing children without allowBare', () => {
-        assert.throws(() =>
-            sanitizeTreePaths(['a'], {
+        assert.throws(() => {
+            return sanitizeTreePaths(['a'], {
                 allowBare: true,
                 children: {
                     a: {
@@ -840,8 +933,8 @@ describe(sanitizeTreePaths.name, () => {
                         children: {},
                     },
                 },
-            }),
-        );
+            });
+        });
     });
     it('redirects paths', () => {
         assert.deepEquals(
@@ -1148,8 +1241,8 @@ describe(sanitizeTreePaths.name, () => {
         );
     });
     it('fails on invalid redirect path', () => {
-        assert.throws(() =>
-            sanitizeTreePaths(
+        assert.throws(() => {
+            return sanitizeTreePaths(
                 [
                     'b',
                     'hello',
@@ -1170,8 +1263,8 @@ describe(sanitizeTreePaths.name, () => {
                         },
                     },
                 },
-            ),
-        );
+            );
+        });
     });
 });
 
@@ -1183,5 +1276,93 @@ describe('GenericTreePaths', () => {
         assert
             .tsType<typeof mockPathTree.paths.children.app.children.uploads>()
             .matches<GenericTreePaths>();
+    });
+});
+
+describe(mapPathTree.name, () => {
+    it('has proper types', () => {
+        assert
+            .tsType(
+                mapPathTree(mockPathTree.tree.children.app.children.uploads, {
+                    children: {
+                        files: {
+                            root: {
+                                label: '',
+                            },
+                            children: {
+                                ':file-path': {
+                                    root: {
+                                        label: '',
+                                    },
+                                    children: {
+                                        view: {
+                                            root: {
+                                                label: '',
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                        patients: {
+                            root: {
+                                label: '',
+                            },
+                        },
+                    },
+                }),
+            )
+            .equals<
+                MappedPathTree<LeafValue, typeof mockPathTree.tree.children.app.children.uploads>
+            >();
+
+        assert
+            .tsType(
+                mapPathTree(
+                    mockPathTree.tree.children.app.children.uploads,
+                    {} as MappedPathTree<
+                        LeafValue,
+                        typeof mockPathTree.tree.children.app.children.uploads
+                    >,
+                ),
+            )
+            .equals<
+                MappedPathTree<LeafValue, typeof mockPathTree.tree.children.app.children.uploads>
+            >();
+    });
+    it('returns the input directly', () => {
+        const value = {
+            children: {
+                files: {
+                    root: {
+                        label: '',
+                    },
+                    children: {
+                        ':file-path': {
+                            root: {
+                                label: '',
+                            },
+                            children: {
+                                view: {
+                                    root: {
+                                        label: '',
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                patients: {
+                    root: {
+                        label: '',
+                    },
+                },
+            },
+        } as const;
+
+        assert.strictEquals(
+            mapPathTree(mockPathTree.tree.children.app.children.uploads, value),
+            value,
+        );
     });
 });
