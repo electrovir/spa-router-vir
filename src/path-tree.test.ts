@@ -3,6 +3,7 @@ import {type EmptyObject} from '@augment-vir/common';
 import {describe, it, itCases} from '@augment-vir/test';
 import {PathTree, sanitizeTreePaths} from './index.js';
 import {
+    getMappedPathTreeValue,
     mapPathTree,
     type GenericTreePaths,
     type MappedPathTree,
@@ -1364,5 +1365,105 @@ describe(mapPathTree.name, () => {
             mapPathTree<LeafValue>()(mockPathTree.tree.children.app.children.uploads, value),
             value,
         );
+    });
+});
+
+describe(getMappedPathTreeValue.name, () => {
+    const templatePathMap = mapPathTree<string>()(mockPathTree.tree.children.app.children.uploads, {
+        children: {
+            files: {
+                root: 'files',
+                children: {
+                    ':file-path': {
+                        root: 'file',
+                        children: {
+                            view: {
+                                root: 'file view',
+                            },
+                        },
+                    },
+                },
+            },
+            patients: {
+                root: 'patients',
+            },
+        },
+    });
+
+    function getTemplate(currentPaths: ReadonlyArray<string>) {
+        return getMappedPathTreeValue(currentPaths, templatePathMap);
+    }
+
+    it('maintains leaf types', () => {
+        assert.tsType(getTemplate(['patients'])).equals<string | undefined>();
+    });
+
+    itCases(getTemplate, [
+        {
+            it: 'returns undefined for a child-only root',
+            input: [],
+            expect: undefined,
+        },
+        {
+            it: 'finds an exact path',
+            input: ['patients'],
+            expect: 'patients',
+        },
+        {
+            it: 'finds a nested path parameter',
+            input: [
+                'files',
+                'example-file',
+            ],
+            expect: 'file',
+        },
+        {
+            it: 'finds nested path parameter children',
+            input: [
+                'files',
+                'example-file',
+                'view',
+            ],
+            expect: 'file view',
+        },
+        {
+            it: 'returns undefined for an unmatched path',
+            input: [
+                'files',
+                'example-file',
+                'invalid',
+            ],
+            expect: undefined,
+        },
+        {
+            it: 'returns undefined for a child of a leaf path',
+            input: [
+                'patients',
+                'invalid',
+            ],
+            expect: undefined,
+        },
+    ]);
+
+    it('prioritizes exact children over path parameters', () => {
+        const pathTree = new PathTree({
+            allowBare: false,
+            children: {
+                ':item': {},
+                settings: {},
+            },
+        });
+        const map = mapPathTree<string>()(pathTree.tree, {
+            children: {
+                ':item': {
+                    root: 'item',
+                },
+                settings: {
+                    root: 'settings',
+                },
+            },
+        });
+
+        assert.strictEquals(getMappedPathTreeValue(['settings'], map), 'settings');
     });
 });

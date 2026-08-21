@@ -6,6 +6,7 @@ import {
     type AnyObject,
     type EmptyObject,
     type IsEqual,
+    type PartialWithUndefined,
     type RemoveLastTupleEntry,
     type Values,
 } from '@augment-vir/common';
@@ -274,6 +275,18 @@ export type MappedPathTreeChildren<LeafValue, Children extends object> = Readonl
 }>;
 
 /**
+ * A generic mapped path tree that can represent a mapped tree from any path-tree definition.
+ *
+ * @category Internal
+ */
+export type GenericMappedPathTree<LeafValue> = Readonly<
+    PartialWithUndefined<{
+        root: LeafValue;
+        children: Readonly<Record<string, GenericMappedPathTree<LeafValue>>>;
+    }>
+>;
+
+/**
  * Creates a {@link MappedPathTree} value for the given path tree.
  *
  * @category Main
@@ -285,6 +298,32 @@ export function mapPathTree<LeafValue>() {
     ) => {
         return mappedTree;
     };
+}
+
+/**
+ * Gets the root value in a mapped path tree that exactly matches the given paths.
+ *
+ * @category Main
+ */
+export function getMappedPathTreeValue<LeafValue>(
+    currentPaths: ReadonlyArray<string>,
+    mappedPathTree: Readonly<GenericMappedPathTree<LeafValue>>,
+): LeafValue | undefined {
+    const matchedPathTree = currentPaths.reduce<GenericMappedPathTree<LeafValue> | undefined>(
+        (currentTree, currentPath) => {
+            return currentTree?.children
+                ? (getObjectTypedEntries(currentTree.children).find(([childPath]) => {
+                      return childPath === currentPath;
+                  }) ||
+                      getObjectTypedEntries(currentTree.children).find(([childPath]) => {
+                          return childPath.startsWith(':');
+                      }))?.[1]
+                : undefined;
+        },
+        mappedPathTree,
+    );
+
+    return matchedPathTree?.root;
 }
 
 /**
