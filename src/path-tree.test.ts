@@ -1,4 +1,4 @@
-import {assert, check} from '@augment-vir/assert';
+import {assert, assertWrap, check} from '@augment-vir/assert';
 import {type EmptyObject} from '@augment-vir/common';
 import {describe, it, itCases} from '@augment-vir/test';
 import {PathTree, sanitizeTreePaths} from './index.js';
@@ -7,6 +7,8 @@ import {
     mapPathTree,
     type GenericTreePaths,
     type MappedPathTree,
+    type MappedPathTreeLeaf,
+    type MappedPathTreeOutput,
     type RemovePathsTypes,
 } from './path-tree.js';
 import {mockPathTree} from './path-tree.mock.js';
@@ -568,52 +570,71 @@ describe(PathTree.name, () => {
         tree.paths.children.design.fullPaths;
     });
     it('creates mapped path tree types', () => {
+        type UploadsChildren = Readonly<{
+            patients: Readonly<{
+                root: LeafValue;
+            }>;
+            files: Readonly<{
+                root: LeafValue;
+                children?:
+                    | Readonly<{
+                          ':file-path': Readonly<{
+                              root: LeafValue;
+                              children?:
+                                  | Readonly<{
+                                        view: Readonly<{
+                                            root: LeafValue;
+                                        }>;
+                                    }>
+                                  | undefined;
+                          }>;
+                      }>
+                    | undefined;
+            }>;
+        }>;
+        type ExpectedUploadsType =
+            | Readonly<{
+                  root: LeafValue;
+                  children?: undefined;
+              }>
+            | Readonly<{
+                  children: UploadsChildren;
+              }>;
         type ExpectedType = Readonly<{
             root: LeafValue;
-            children: Readonly<{
-                app: Readonly<{
-                    root: LeafValue;
-                    children: Readonly<{
-                        uploads: Readonly<{
-                            children: Readonly<{
-                                patients: Readonly<{
-                                    root: LeafValue;
-                                }>;
-                                files: Readonly<{
-                                    root: LeafValue;
-                                    children: Readonly<{
-                                        ':file-path': Readonly<{
-                                            root: LeafValue;
-                                            children: Readonly<{
-                                                view: Readonly<{
-                                                    root: LeafValue;
-                                                }>;
-                                            }>;
-                                        }>;
+            children?:
+                | Readonly<{
+                      app: Readonly<{
+                          root: LeafValue;
+                          children?:
+                              | Readonly<{
+                                    uploads: ExpectedUploadsType;
+                                    settings: Readonly<{
+                                        root: LeafValue;
+                                        children?:
+                                            | Readonly<{
+                                                  disabled: Readonly<{
+                                                      root: LeafValue;
+                                                  }>;
+                                              }>
+                                            | undefined;
                                     }>;
-                                }>;
-                            }>;
-                        }>;
-                        settings: Readonly<{
-                            root: LeafValue;
-                            children: Readonly<{
-                                disabled: Readonly<{
-                                    root: LeafValue;
-                                }>;
-                            }>;
-                        }>;
-                    }>;
-                }>;
-                withAny: EmptyObject;
-                legal: Readonly<{
-                    root: LeafValue;
-                }>;
-            }>;
+                                }>
+                              | undefined;
+                      }>;
+                      withAny: Readonly<{
+                          root: LeafValue;
+                      }>;
+                      legal: Readonly<{
+                          root: LeafValue;
+                      }>;
+                  }>
+                | undefined;
         }>;
 
         const exampleInstance: MappedPathTree<
             LeafValue,
-            typeof mockPathTree.tree.children.app.children.uploads
+            typeof mockPathTree.paths.children.app.children.uploads
         > = {
             children: {
                 files: {
@@ -643,12 +664,14 @@ describe(PathTree.name, () => {
             },
         };
 
-        assert.tsType<MappedPathTree<LeafValue, typeof mockPathTree.tree>>().equals<ExpectedType>();
+        assert
+            .tsType<MappedPathTree<LeafValue, typeof mockPathTree.paths>>()
+            .equals<ExpectedType>();
         assert
             .tsType<
-                MappedPathTree<LeafValue, typeof mockPathTree.tree.children.app.children.uploads>
+                MappedPathTree<LeafValue, typeof mockPathTree.paths.children.app.children.uploads>
             >()
-            .equals<ExpectedType['children']['app']['children']['uploads']>();
+            .equals<ExpectedUploadsType>();
     });
     it('works with SpaRouteByPath', () => {
         const fakePath: SpaRouteByPath<
@@ -1284,7 +1307,7 @@ describe(mapPathTree.name, () => {
     it('has proper types', () => {
         assert
             .tsType(
-                mapPathTree<LeafValue>()(mockPathTree.tree.children.app.children.uploads, {
+                mapPathTree<LeafValue>()(mockPathTree.paths.children.app.children.uploads, {
                     children: {
                         files: {
                             root: {
@@ -1314,21 +1337,27 @@ describe(mapPathTree.name, () => {
                 }),
             )
             .equals<
-                MappedPathTree<LeafValue, typeof mockPathTree.tree.children.app.children.uploads>
+                MappedPathTreeOutput<
+                    LeafValue,
+                    typeof mockPathTree.paths.children.app.children.uploads
+                >
             >();
 
         assert
             .tsType(
                 mapPathTree<LeafValue>()(
-                    mockPathTree.tree.children.app.children.uploads,
+                    mockPathTree.paths.children.app.children.uploads,
                     {} as MappedPathTree<
                         LeafValue,
-                        typeof mockPathTree.tree.children.app.children.uploads
+                        typeof mockPathTree.paths.children.app.children.uploads
                     >,
                 ),
             )
             .equals<
-                MappedPathTree<LeafValue, typeof mockPathTree.tree.children.app.children.uploads>
+                MappedPathTreeOutput<
+                    LeafValue,
+                    typeof mockPathTree.paths.children.app.children.uploads
+                >
             >();
     });
     it('returns the input directly', () => {
@@ -1362,33 +1391,36 @@ describe(mapPathTree.name, () => {
         } as const;
 
         assert.strictEquals(
-            mapPathTree<LeafValue>()(mockPathTree.tree.children.app.children.uploads, value),
+            mapPathTree<LeafValue>()(mockPathTree.paths.children.app.children.uploads, value),
             value,
         );
     });
 });
 
 describe(getMappedPathTreeValue.name, () => {
-    const templatePathMap = mapPathTree<string>()(mockPathTree.tree.children.app.children.uploads, {
-        children: {
-            files: {
-                root: 'files',
-                children: {
-                    ':file-path': {
-                        root: 'file',
-                        children: {
-                            view: {
-                                root: 'file view',
+    const templatePathMap = mapPathTree<string>()(
+        mockPathTree.paths.children.app.children.uploads,
+        {
+            children: {
+                files: {
+                    root: 'files',
+                    children: {
+                        ':file-path': {
+                            root: 'file',
+                            children: {
+                                view: {
+                                    root: 'file view',
+                                },
                             },
                         },
                     },
                 },
-            },
-            patients: {
-                root: 'patients',
+                patients: {
+                    root: 'patients',
+                },
             },
         },
-    });
+    );
 
     function getTemplate(currentPaths: ReadonlyArray<string>) {
         return getMappedPathTreeValue(currentPaths, templatePathMap);
@@ -1436,15 +1468,105 @@ describe(getMappedPathTreeValue.name, () => {
             expect: undefined,
         },
         {
-            it: 'returns undefined for a child of a leaf path',
+            it: 'returns a leaf root for its descendant paths',
             input: [
                 'patients',
-                'invalid',
+                'extra',
             ],
-            expect: undefined,
+            expect: 'patients',
         },
     ]);
 
+    it('returns the nearest root for nodes with omitted children', () => {
+        const map = mapPathTree<string>()(mockPathTree.paths, {
+            root: 'home',
+            children: {
+                app: {
+                    root: 'app',
+                    children: {
+                        uploads: {
+                            root: 'uploads',
+                        },
+                        settings: {
+                            root: 'settings',
+                        },
+                    },
+                },
+                withAny: {
+                    root: 'any',
+                },
+                legal: {
+                    root: 'legal',
+                },
+            },
+        });
+
+        assert.deepEquals(
+            [
+                [],
+                ['app'],
+                [
+                    'app',
+                    'uploads',
+                    'files',
+                    'example-file',
+                    'view',
+                ],
+                [
+                    'app',
+                    'settings',
+                    'disabled',
+                ],
+                [
+                    'withAny',
+                    'a',
+                    'b',
+                ],
+                [
+                    'app',
+                    'invalid',
+                ],
+            ].map((paths) => getMappedPathTreeValue(paths, map)),
+            [
+                'home',
+                'app',
+                'uploads',
+                'settings',
+                'any',
+                undefined,
+            ],
+        );
+    });
+    it('requires root when children are omitted', () => {
+        mapPathTree<string>()(mockPathTree.paths.children.app.children.uploads, {
+            root: 'uploads',
+        });
+        mapPathTree<string>()(
+            mockPathTree.paths.children.app.children.uploads,
+            // @ts-expect-error: uploads does not allow bare paths, so it needs root or children.
+            {},
+        );
+        // @ts-expect-error: app allows bare paths, so root is required even with children.
+        mapPathTree<string>()(mockPathTree.paths.children.app, {
+            children: {
+                uploads: {
+                    root: 'uploads',
+                },
+                settings: {
+                    root: 'settings',
+                },
+            },
+        });
+        mapPathTree<string>()(mockPathTree.paths.children.app, {
+            root: 'app',
+            // @ts-expect-error: provided children must include every child path.
+            children: {
+                uploads: {
+                    root: 'uploads',
+                },
+            },
+        });
+    });
     it('prioritizes exact children over path parameters', () => {
         const pathTree = new PathTree({
             allowBare: false,
@@ -1453,7 +1575,7 @@ describe(getMappedPathTreeValue.name, () => {
                 settings: {},
             },
         });
-        const map = mapPathTree<string>()(pathTree.tree, {
+        const map = mapPathTree<string>()(pathTree.paths, {
             children: {
                 ':item': {
                     root: 'item',
@@ -1465,5 +1587,104 @@ describe(getMappedPathTreeValue.name, () => {
         });
 
         assert.strictEquals(getMappedPathTreeValue(['settings'], map), 'settings');
+    });
+    it('types each root with the paths that can reach it', () => {
+        type ExampleState<Paths extends ReadonlyArray<string>> = Readonly<{
+            paths: Paths;
+        }>;
+        interface ExampleRendererLeaf extends MappedPathTreeLeaf {
+            readonly leaf: (
+                state: ExampleState<Extract<this['paths'], ReadonlyArray<string>>>,
+            ) => string;
+        }
+        type UploadsPaths = typeof mockPathTree.paths.children.app.children.uploads;
+
+        function renderFiles(state: ExampleState<UploadsPaths['children']['files']['PathsType']>) {
+            return state.paths.join('/');
+        }
+
+        const map = mapPathTree<ExampleRendererLeaf>()(mockPathTree.paths, {
+            root(state) {
+                assert.tsType(state.paths).equals<typeof mockPathTree.PathsType>();
+                return 'root';
+            },
+            children: {
+                app: {
+                    root(state) {
+                        assert
+                            .tsType(state.paths)
+                            .equals<typeof mockPathTree.paths.children.app.PathsType>();
+                        return 'app';
+                    },
+                    children: {
+                        uploads: {
+                            children: {
+                                patients: {
+                                    root(state) {
+                                        assert
+                                            .tsType(state.paths)
+                                            .equals<
+                                                UploadsPaths['children']['patients']['PathsType']
+                                            >();
+                                        return 'patients';
+                                    },
+                                },
+                                files: {
+                                    root: renderFiles,
+                                },
+                            },
+                        },
+                        settings: {
+                            root() {
+                                return 'settings';
+                            },
+                        },
+                    },
+                },
+                withAny: {
+                    root() {
+                        return 'any';
+                    },
+                },
+                legal: {
+                    root() {
+                        return 'legal';
+                    },
+                },
+            },
+        });
+
+        mapPathTree<ExampleRendererLeaf>()(mockPathTree.paths.children.app.children.uploads, {
+            children: {
+                patients: {
+                    // @ts-expect-error: patients paths cannot satisfy the files state.
+                    root: renderFiles,
+                },
+                files: {
+                    root: renderFiles,
+                },
+            },
+        });
+
+        function render(currentPaths: typeof mockPathTree.PathsType) {
+            const renderer = assertWrap.isDefined(getMappedPathTreeValue(currentPaths, map));
+
+            assert
+                .tsType<Parameters<typeof renderer>[0]>()
+                .equals<ExampleState<typeof mockPathTree.PathsType>>();
+
+            return renderer({
+                paths: currentPaths,
+            });
+        }
+
+        assert.strictEquals(
+            render([
+                'app',
+                'uploads',
+                'files',
+            ]),
+            'app/uploads/files',
+        );
     });
 });

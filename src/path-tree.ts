@@ -219,59 +219,92 @@ export type TreeWithParams<
         }>;
 
 /**
- * Converts a path tree into a nested object type.
+ * Extend this to make each {@link mapPathTree} leaf's type depend on that leaf's paths. Read the
+ * paths through `this['paths']` in your `leaf` type. If a leaf type passed to {@link mapPathTree}
+ * does not extend this, it's used as-is for every leaf.
  *
- * The `root` property represents the current path when it is valid as a bare path. The `children`
- * property contains entries for each known child path.
+ * Keep `paths` typed as `unknown` in extensions. Narrowing it (to `ReadonlyArray<string>`, for
+ * example) intersects it with each leaf's paths tuple.
+ *
+ * @category Main
+ * @example
+ *
+ * ```ts
+ * import {type MappedPathTreeLeaf} from 'spa-router-vir';
+ *
+ * interface RouteRendererLeaf extends MappedPathTreeLeaf {
+ *     readonly leaf: (paths: Extract<this['paths'], ReadonlyArray<string>>) => string;
+ * }
+ * ```
+ */
+export interface MappedPathTreeLeaf {
+    readonly paths: unknown;
+    readonly leaf: unknown;
+}
+
+/**
+ * The leaf type for the given paths. See {@link MappedPathTreeLeaf}.
+ *
+ * @category Internal
+ */
+export type ApplyMappedPathTreeLeaf<Leaf, Paths> = Leaf extends MappedPathTreeLeaf
+    ? (Leaf &
+          Readonly<{
+              paths: Paths;
+          }>)['leaf']
+    : Leaf;
+
+/**
+ * Converts a {@link PathTree.paths} node into a nested object type.
+ *
+ * The `root` property holds the value for the current path. It is required when the path is valid
+ * as a bare path or when `children` is omitted. `children` may be omitted, in which case
+ * {@link getMappedPathTreeValue} returns this node's `root` for every descendant path. When
+ * `children` is provided, it must map every child path.
+ *
+ * Each `root` is typed with all valid paths at or below its node (see {@link MappedPathTreeLeaf}).
  *
  * @category Internal
  */
 export type MappedPathTree<
-    LeafValue,
-    Tree extends Readonly<BasePathTree | EmptyObject>,
-> = EmptyObject extends Tree
-    ? Readonly<{
-          root: LeafValue;
-      }>
-    : Tree extends Readonly<{
-            children: infer Children extends object;
-        }>
-      ? keyof Children extends never
-          ? Tree extends Readonly<{
-                allowBare: true;
-            }>
-              ? Readonly<{
-                    root: LeafValue;
-                }>
-              : EmptyObject
-          : Tree extends Readonly<{
-                  allowBare: true;
-              }>
+    Leaf,
+    TreePaths extends Readonly<Pick<GenericTreePaths, 'fullPaths' | 'PathsType'>>,
+> =
+    TreePaths extends Readonly<{
+        children: infer Children extends object;
+    }>
+        ? EmptyObject extends Children
             ? Readonly<{
-                  root: LeafValue;
-                  children: MappedPathTreeChildren<LeafValue, Children>;
+                  root: ApplyMappedPathTreeLeaf<Leaf, TreePaths['PathsType']>;
               }>
-            : Readonly<{
-                  children: MappedPathTreeChildren<LeafValue, Children>;
-              }>
-      : Tree extends Readonly<{
-              allowBare: true;
-          }>
-        ? Readonly<{
-              root: LeafValue;
-          }>
-        : EmptyObject;
+            : TreePaths['fullPaths'] extends TreePaths['PathsType']
+              ? Readonly<{
+                    root: ApplyMappedPathTreeLeaf<Leaf, TreePaths['PathsType']>;
+                    children?: MappedPathTreeChildren<Leaf, Children> | undefined;
+                }>
+              :
+                    | Readonly<{
+                          root: ApplyMappedPathTreeLeaf<Leaf, TreePaths['PathsType']>;
+                          children?: undefined;
+                      }>
+                    | Readonly<{
+                          children: MappedPathTreeChildren<Leaf, Children>;
+                      }>
+        : Readonly<{
+              root: ApplyMappedPathTreeLeaf<Leaf, TreePaths['PathsType']>;
+          }>;
 
 /**
  * Helper for {@link MappedPathTree}.
  *
  * @category Internal
  */
-export type MappedPathTreeChildren<LeafValue, Children extends object> = Readonly<{
-    [Path in keyof Children]: MappedPathTree<
-        LeafValue,
-        Extract<Children[Path], Readonly<BasePathTree | EmptyObject>>
-    >;
+export type MappedPathTreeChildren<Leaf, Children extends object> = Readonly<{
+    [Path in keyof Children]: Children[Path] extends Readonly<
+        Pick<GenericTreePaths, 'fullPaths' | 'PathsType'>
+    >
+        ? MappedPathTree<Leaf, Children[Path]>
+        : never;
 }>;
 
 /**
@@ -287,43 +320,85 @@ export type GenericMappedPathTree<LeafValue> = Readonly<
 >;
 
 /**
- * Creates a {@link MappedPathTree} value for the given path tree.
+ * Output of {@link mapPathTree}. `LeafType` is only a type: it never exists at runtime.
+ *
+ * @category Internal
+ */
+export type MappedPathTreeOutput<
+    Leaf,
+    TreePaths extends Readonly<Pick<GenericTreePaths, 'fullPaths' | 'PathsType'>>,
+> = MappedPathTree<Leaf, TreePaths> &
+    Readonly<{
+        LeafType?: Leaf;
+    }>;
+
+/**
+ * Creates a {@link MappedPathTree} value for the given {@link PathTree.paths} node (the root `paths`
+ * or any of its descendants).
  *
  * @category Main
  */
-export function mapPathTree<LeafValue>() {
-    return <const Tree extends Readonly<BasePathTree | EmptyObject>>(
-        tree: Tree,
-        mappedTree: MappedPathTree<LeafValue, Tree>,
-    ) => {
-        return mappedTree;
+export function mapPathTree<Leaf>() {
+    return <const TreePaths extends Readonly<Pick<GenericTreePaths, 'fullPaths' | 'PathsType'>>>(
+        treePaths: TreePaths,
+        mappedTree: MappedPathTree<Leaf, TreePaths>,
+    ): MappedPathTreeOutput<Leaf, TreePaths> => {
+        return mappedTree satisfies MappedPathTree<Leaf, TreePaths> as MappedPathTreeOutput<
+            Leaf,
+            TreePaths
+        >;
     };
 }
 
 /**
- * Gets the root value in a mapped path tree that exactly matches the given paths.
+ * Gets the root value in a mapped path tree that matches the given paths. When the walk reaches a
+ * node that omits `children`, that node's `root` is returned for all remaining paths. A path that
+ * doesn't match any of a node's provided `children` returns `undefined`.
+ *
+ * The output is typed for `currentPaths`. For a map of a sub-tree, `currentPaths` must only contain
+ * the paths below that sub-tree, so pass the explicit generic paths if a {@link MappedPathTreeLeaf}
+ * needs the full paths.
  *
  * @category Main
  */
-export function getMappedPathTreeValue<LeafValue>(
-    currentPaths: ReadonlyArray<string>,
-    mappedPathTree: Readonly<GenericMappedPathTree<LeafValue>>,
-): LeafValue | undefined {
-    const matchedPathTree = currentPaths.reduce<GenericMappedPathTree<LeafValue> | undefined>(
-        (currentTree, currentPath) => {
-            return currentTree?.children
-                ? (getObjectTypedEntries(currentTree.children).find(([childPath]) => {
-                      return childPath === currentPath;
-                  }) ||
-                      getObjectTypedEntries(currentTree.children).find(([childPath]) => {
-                          return childPath.startsWith(':');
-                      }))?.[1]
-                : undefined;
-        },
-        mappedPathTree,
-    );
+export function getMappedPathTreeValue<Leaf, const CurrentPaths extends ReadonlyArray<string>>(
+    currentPaths: CurrentPaths,
+    mappedPathTree: Readonly<GenericMappedPathTree<unknown>> &
+        Readonly<{
+            LeafType?: Leaf;
+        }>,
+) {
+    /**
+     * The matched node's leaf is only typed for that node's paths. It's safe to type it with
+     * `currentPaths` because `currentPaths` are what matched that node.
+     */
+    return findMappedPathTreeRoot(currentPaths, mappedPathTree) as
+        | ApplyMappedPathTreeLeaf<Leaf, CurrentPaths>
+        | undefined;
+}
 
-    return matchedPathTree?.root;
+/** Recursion requires this explicit return type. */
+function findMappedPathTreeRoot(
+    currentPaths: ReadonlyArray<string>,
+    mappedPathTree: Readonly<GenericMappedPathTree<unknown>>,
+): unknown {
+    if (!mappedPathTree.children || !check.isLengthAtLeast(currentPaths, 1)) {
+        return mappedPathTree.root;
+    }
+
+    const [
+        currentPath,
+        ...remainingPaths
+    ] = currentPaths;
+    const childEntries = getObjectTypedEntries(mappedPathTree.children);
+    const matchedChild = (childEntries.find(([childPath]) => {
+        return childPath === currentPath;
+    }) ||
+        childEntries.find(([childPath]) => {
+            return childPath.startsWith(':');
+        }))?.[1];
+
+    return matchedChild ? findMappedPathTreeRoot(remainingPaths, matchedChild) : undefined;
 }
 
 /**
