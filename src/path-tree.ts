@@ -554,7 +554,7 @@ function generatePathTreePaths<const Tree extends BasePathTree | EmptyObject>(
     if (currentPath.startsWith(':')) {
         return {
             ...generatedTree,
-            fill: (pathParam: string) => {
+            fill(pathParam: string) {
                 return generatePathTreePaths(tree, [
                     ...parentPaths.slice(0, -1),
                     pathParam,

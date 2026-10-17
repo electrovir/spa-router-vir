@@ -50,7 +50,9 @@ export class SpaRouter<
         this.innerObservable = new Observable<FullSpaRoute<ValidPaths, ValidSearch, ValidHash>>({
             defaultValue: sanitizedCurrentUrl,
             /** Also consider values unequal so they are always set. */
-            equalityCheck: () => false,
+            equalityCheck() {
+                return false;
+            },
         });
 
         consolidateGlobalUrlEvents();

@@ -436,7 +436,9 @@ describe(SpaRouter.name, () => {
                     hash: undefined,
                 };
             },
-            isRouteAllowed: () => false,
+            isRouteAllowed() {
+                return false;
+            },
         });
 
         try {
