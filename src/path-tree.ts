@@ -102,6 +102,94 @@ export type NestedTreePaths<NestedTree extends BasePathTree> =
           }>
         : Readonly<[]>;
 
+/**
+ * The tree produced by {@link PathTree.extend}: `Extension` deeply merged into `Base`, with
+ * `Extension` winning on every option they both set.
+ *
+ * @category Internal
+ */
+export type ExtendedPathTree<
+    Base extends Readonly<BasePathTree> | EmptyObject,
+    Extension extends Readonly<BasePathTree> | EmptyObject,
+> = EmptyObject extends Extension
+    ? Base
+    : EmptyObject extends Base
+      ? Extension
+      : Omit<Base, keyof Extension> &
+            Omit<Extension, 'children'> & {
+                children: ExtendedPathTreeChildren<
+                    NonNullable<Exclude<Base, EmptyObject>['children']>,
+                    NonNullable<Exclude<Extension, EmptyObject>['children']>
+                >;
+            };
+
+/**
+ * Nested part of {@link ExtendedPathTree}.
+ *
+ * @category Internal
+ */
+export type ExtendedPathTreeChildren<
+    BaseChildren extends NonNullable<BasePathTree['children']>,
+    ExtensionChildren extends NonNullable<BasePathTree['children']>,
+> = {
+    [Path in keyof BaseChildren | keyof ExtensionChildren]: Path extends keyof ExtensionChildren
+        ? Path extends keyof BaseChildren
+            ? ExtendedPathTree<BaseChildren[Path], ExtensionChildren[Path]>
+            : ExtensionChildren[Path]
+        : Path extends keyof BaseChildren
+          ? BaseChildren[Path]
+          : never;
+};
+
+function mergePathTrees({
+    base,
+    extension,
+}: Readonly<{
+    base: Readonly<BasePathTree | EmptyObject>;
+    extension: Readonly<BasePathTree | EmptyObject>;
+}>): BasePathTree | EmptyObject {
+    if (check.isEmpty(extension)) {
+        return base;
+    } else if (check.isEmpty(base)) {
+        return extension;
+    }
+
+    const baseChildren = (base as BasePathTree).children;
+    const extensionChildren = (extension as BasePathTree).children;
+
+    if (!baseChildren || !extensionChildren) {
+        return {
+            ...base,
+            ...extension,
+            children: baseChildren || extensionChildren,
+        } as BasePathTree;
+    }
+
+    const children: NonNullable<BasePathTree['children']> = {
+        ...baseChildren,
+    };
+    getObjectTypedEntries(extensionChildren).forEach(
+        ([
+            path,
+            extensionChild,
+        ]) => {
+            const baseChild = baseChildren[path];
+            children[path] = baseChild
+                ? mergePathTrees({
+                      base: baseChild,
+                      extension: extensionChild,
+                  })
+                : extensionChild;
+        },
+    );
+
+    return {
+        ...base,
+        ...extension,
+        children,
+    } as BasePathTree;
+}
+
 function checkTree(tree: Readonly<BasePathTree>, pathChain: string[]): void {
     const childrenEntries = Object.entries(tree.children || {});
     const parentString = pathChain.length ? ` at ${pathChain.join(' -> ')}.` : '.';
@@ -631,8 +719,90 @@ export class PathTree<const Tree extends Readonly<BasePathTree>> {
     }
 
     /** Sanitize the given paths to match this path tree. */
-    public sanitizePaths(rawPaths: ReadonlyArray<string>): TreePaths<Tree> {
+    public sanitizePaths(
+        rawPaths: ReadonlyArray<string>,
+        options?: Readonly<{
+            passThroughUnknownTopLevelPaths?: false | undefined;
+        }>,
+    ): TreePaths<Tree>;
+    /**
+     * Sanitize the given paths to match this path tree, except that paths whose first part matches
+     * none of this tree's top-level children (directly, through `redirectFrom`, or through a path
+     * param) are returned untouched. Use this to sanitize only the routes this tree knows about
+     * while leaving another tree's routes alone.
+     */
+    public sanitizePaths(
+        rawPaths: ReadonlyArray<string>,
+        options: Readonly<{
+            passThroughUnknownTopLevelPaths: true;
+        }>,
+    ): TreePaths<Tree> | ReadonlyArray<string>;
+    public sanitizePaths(
+        rawPaths: ReadonlyArray<string>,
+        options: Readonly<
+            PartialWithUndefined<{
+                passThroughUnknownTopLevelPaths: boolean;
+            }>
+        > = {},
+    ): TreePaths<Tree> | ReadonlyArray<string> {
+        if (
+            options.passThroughUnknownTopLevelPaths &&
+            check.isLengthAtLeast(rawPaths, 1) &&
+            !findMatchingChildEntry(this.tree.children || {}, rawPaths[0], rawPaths.length > 1)
+        ) {
+            return rawPaths;
+        }
+
         return sanitizeTreePaths(rawPaths, this.tree) as TreePaths<Tree>;
+    }
+
+    /**
+     * Create a new {@link PathTree} with the given tree deeply merged into this one. Children
+     * missing from this tree are added, children present in both are merged recursively, and every
+     * other option set in `extension` overrides this tree's. This tree is not modified.
+     *
+     * @example
+     *
+     * ```ts
+     * import {PathTree} from 'spa-router-vir';
+     *
+     * const publicPathTree = new PathTree({
+     *     allowBare: true,
+     *     children: {
+     *         status: {
+     *             allowBare: true,
+     *             children: {
+     *                 incidents: {},
+     *             },
+     *         },
+     *     },
+     * });
+     *
+     * const fullPathTree = publicPathTree.extend({
+     *     allowBare: true,
+     *     children: {
+     *         status: {
+     *             allowBare: true,
+     *             children: {
+     *                 'create-incident': {},
+     *             },
+     *         },
+     *         settings: {},
+     *     },
+     * });
+     * ```
+     */
+    public extend<const Extension extends Readonly<BasePathTree>>(
+        extension: Extension,
+    ): ExtendedPathTree<Tree, Extension> extends infer Extended extends Readonly<BasePathTree>
+        ? PathTree<Extended>
+        : never {
+        return new PathTree<BasePathTree>(
+            mergePathTrees({
+                base: this.tree,
+                extension,
+            }) as BasePathTree,
+        ) as any;
     }
 }
 

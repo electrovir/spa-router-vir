@@ -839,6 +839,159 @@ describe(PathTree.name, () => {
         assert.throws(() => mockPathTree.PathsType);
     });
 
+    it('extends a tree with nested children', () => {
+        const baseTree = new PathTree({
+            allowBare: true,
+            children: {
+                status: {
+                    allowBare: true,
+                    children: {
+                        incidents: {},
+                    },
+                },
+                legal: {
+                    allowBare: true,
+                },
+                help: {},
+            },
+        });
+        const extendedTree = baseTree.extend({
+            allowBare: false,
+            children: {
+                status: {
+                    allowBare: true,
+                    children: {
+                        incidents: {},
+                        'create-incident': {},
+                    },
+                },
+                legal: {
+                    allowBare: true,
+                    children: {
+                        terms: {},
+                    },
+                },
+                help: {
+                    allowBare: false,
+                    children: {
+                        faq: {},
+                    },
+                },
+                settings: {},
+            },
+        });
+
+        assert.tsType<typeof extendedTree.PathsType>().equals<
+            | Readonly<
+                  [
+                      'help',
+                      'faq',
+                  ]
+              >
+            | Readonly<['legal']>
+            | Readonly<
+                  [
+                      'legal',
+                      'terms',
+                  ]
+              >
+            | Readonly<['settings']>
+            | Readonly<['status']>
+            | Readonly<
+                  [
+                      'status',
+                      'create-incident',
+                  ]
+              >
+            | Readonly<
+                  [
+                      'status',
+                      'incidents',
+                  ]
+              >
+        >();
+        assert.deepEquals(extendedTree.tree, {
+            allowBare: false,
+            children: {
+                status: {
+                    allowBare: true,
+                    children: {
+                        incidents: {},
+                        'create-incident': {},
+                    },
+                },
+                legal: {
+                    allowBare: true,
+                    children: {
+                        terms: {},
+                    },
+                },
+                help: {
+                    allowBare: false,
+                    children: {
+                        faq: {},
+                    },
+                },
+                settings: {},
+            },
+        });
+        assert.deepEquals(
+            extendedTree.sanitizePaths([
+                'status',
+                'create-incident',
+            ]),
+            [
+                'status',
+                'create-incident',
+            ],
+        );
+        assert.deepEquals(
+            baseTree.sanitizePaths([
+                'status',
+                'create-incident',
+            ]),
+            ['status'],
+        );
+    });
+
+    it('passes through unknown top-level paths', () => {
+        const unknownPaths = [
+            'not-in-tree',
+            'child',
+        ];
+        assert.deepEquals(
+            mockPathTree.sanitizePaths(unknownPaths, {
+                passThroughUnknownTopLevelPaths: true,
+            }),
+            unknownPaths,
+        );
+        assert.deepEquals(mockPathTree.sanitizePaths(unknownPaths), []);
+        assert.deepEquals(
+            new PathTree({
+                allowBare: true,
+            }).sanitizePaths(unknownPaths, {
+                passThroughUnknownTopLevelPaths: true,
+            }),
+            unknownPaths,
+        );
+        assert.deepEquals(
+            mockPathTree.sanitizePaths(
+                [
+                    'app',
+                    'uploads',
+                ],
+                {
+                    passThroughUnknownTopLevelPaths: true,
+                },
+            ),
+            [
+                'app',
+                'uploads',
+                'files',
+            ],
+        );
+    });
+
     function testSanitizePaths(rawPaths: string[]) {
         const output = mockPathTree.sanitizePaths(rawPaths);
 

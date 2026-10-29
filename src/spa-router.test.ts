@@ -426,6 +426,36 @@ describe(SpaRouter.name, () => {
         }),
     );
 
+    it('re-sanitizes the current route when the sanitizer is replaced', () => {
+        globalThis.history.replaceState(undefined, '', '/gallery/some-id');
+        const router = new SpaRouter<MockValidPaths>({
+            sanitizeRoute(rawRoute) {
+                return {
+                    paths: rawRoute.paths as MockValidPaths,
+                    search: undefined,
+                    hash: undefined,
+                };
+            },
+        });
+
+        try {
+            assert.strictEquals(parseUrl(globalThis.location.href).fullPath, '/gallery/some-id');
+
+            router.replaceSanitizer(() => {
+                return {
+                    paths: ['home'],
+                    search: undefined,
+                    hash: undefined,
+                };
+            });
+
+            assert.strictEquals(parseUrl(globalThis.location.href).fullPath, '/home');
+            assert.deepEquals(router.readCurrentRoute().paths, ['home']);
+        } finally {
+            router.destroy();
+        }
+    });
+
     it('blocks setRoute when isRouteAllowed returns false', () => {
         globalThis.history.replaceState(undefined, '', '/home');
         const router = new SpaRouter<MockValidPaths>({

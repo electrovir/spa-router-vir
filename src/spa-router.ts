@@ -13,7 +13,11 @@ import {
     type ValidPathsBase,
     type ValidSearchBase,
 } from './spa-route.js';
-import {type SpaRouterParams, spaRouterParamsShape} from './spa-router-params.js';
+import {
+    type RouteSanitizer,
+    type SpaRouterParams,
+    spaRouterParamsShape,
+} from './spa-router-params.js';
 import {shouldClickEventTriggerRouteChange} from './util/click-event-should-set-routes.js';
 import {
     consolidateGlobalUrlEvents,
@@ -38,13 +42,12 @@ export class SpaRouter<
      */
     protected removeGlobalListener: () => void;
     protected sanitizationDepth = 0;
-    /** The params with which this `SpaRouter` was initially constructed. */
     public params: SpaRouterParams<ValidPaths, ValidSearch, ValidHash>;
 
-    constructor(params: Readonly<SpaRouterParams<ValidPaths, ValidSearch, ValidHash>>) {
-        assertValidShape(params, spaRouterParamsShape);
+    constructor(initParams: SpaRouterParams<ValidPaths, ValidSearch, ValidHash>) {
+        assertValidShape(initParams, spaRouterParamsShape);
         this.params = {
-            ...params,
+            ...initParams,
         };
         const sanitizedCurrentUrl = this.readCurrentRoute();
         this.innerObservable = new Observable<FullSpaRoute<ValidPaths, ValidSearch, ValidHash>>({
@@ -69,7 +72,7 @@ export class SpaRouter<
 
             const rawRoute = parseUrlIntoRawRoute(globalThis.location.href, this.params.basePath);
 
-            const sanitizedRoute = params.sanitizeRoute(rawRoute);
+            const sanitizedRoute = this.params.sanitizeRoute(rawRoute);
 
             if (check.jsonEquals(rawRoute, sanitizedRoute)) {
                 this.sanitizationDepth = 0;
@@ -79,7 +82,7 @@ export class SpaRouter<
                 this.setRoute(sanitizedRoute, {
                     replace: true,
                 });
-                if (!params.disableWarnings) {
+                if (!this.params.disableWarnings) {
                     console.warn('Route sanitized.', {
                         from: rawRoute,
                         to: sanitizedRoute,
@@ -114,6 +117,18 @@ export class SpaRouter<
         rawRoute: Readonly<FullSpaRoute>,
     ): FullSpaRoute<ValidPaths, ValidSearch, ValidHash> {
         return this.params.sanitizeRoute(rawRoute);
+    }
+
+    /**
+     * Replace this router's sanitizer, then re-sanitize the current window URL with it (replacing
+     * the current history entry rather than pushing a new one). Use this when the set of valid
+     * routes changes while the app is running, such as after lazy loading more routes.
+     */
+    public replaceSanitizer(sanitizeRoute: RouteSanitizer<ValidPaths, ValidSearch, ValidHash>) {
+        this.params.sanitizeRoute = sanitizeRoute;
+        this.setRoute(this.readCurrentRoute(), {
+            replace: true,
+        });
     }
 
     /** Create a full URL href string from the given route (combined with the current route). */
