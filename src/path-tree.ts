@@ -918,7 +918,7 @@ export function sanitizeTreePaths(
 
                 const isPathParam = matchedKey.startsWith(':');
                 const outputPathPart =
-                    !isPathParam && matchedKey !== currentPathPart ? matchedKey : currentPathPart;
+                    isPathParam || matchedKey === currentPathPart ? currentPathPart : matchedKey;
 
                 return [
                     outputPathPart,

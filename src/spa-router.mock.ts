@@ -16,13 +16,13 @@ export function sanitizeMockPaths(rawRoute: Readonly<Pick<SpaRoute, 'paths'>>): 
     const topLevelPath = rawRoute.paths[0];
 
     if (topLevelPath === 'about') {
-        if (rawRoute.paths[1] !== 'team' && rawRoute.paths[1] !== 'website') {
-            return ['about'];
-        } else {
+        if (rawRoute.paths[1] === 'team' || rawRoute.paths[1] === 'website') {
             return [
                 'about',
                 rawRoute.paths[1],
             ];
+        } else {
+            return ['about'];
         }
     } else if (topLevelPath === 'gallery' && rawRoute.paths[1]) {
         return [
